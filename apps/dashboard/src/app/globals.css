@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --naty-green: #6BBF4E;
+  --naty-blue: #3AABCE;
+  --naty-sky: #5BC8E8;
+  --naty-dark: #1A1A2E;
+  --naty-white: #FFFFFF;
+  --naty-gray: #F4F6F8;
+}
+
+body {
+  background-color: var(--naty-dark);
+  color: var(--naty-white);
+}

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# SDD — sistema de orquestación
+sdd/
+lib/notify.js
+lib/wait-approval.js
+lib/request-permission.js

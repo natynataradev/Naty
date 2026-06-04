@@ -1,0 +1,24 @@
+{
+  "name": "naty",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Naty — Sistema WhatsApp para Natara La Cima",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "notify": "node lib/notify.js",
+    "wait": "node lib/wait-approval.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

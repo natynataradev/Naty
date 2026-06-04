@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node lib/notify.js*)",
+      "Bash(node lib/wait-approval.js*)",
+      "Bash(node lib/request-permission.js*)",
+      "Bash(npm test*)",
+      "Bash(npm run*)",
+      "Bash(npm install*)",
+      "Bash(npx*)",
+      "Bash(pnpm*)",
+      "Bash(node*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "PowerShell(pnpm*)",
+      "PowerShell(npm*)",
+      "PowerShell(npx*)",
+      "PowerShell(node*)",
+      "PowerShell(git status*)",
+      "PowerShell(git log*)",
+      "PowerShell(git diff*)",
+      "PowerShell(git add*)",
+      "PowerShell(git commit*)"
+    ]
+  },
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node lib/request-permission.js",
+            "timeout": 14400,
+            "shell": "powershell"
+          }
+        ]
+      }
+    ]
+  }
+}
