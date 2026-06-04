@@ -22,7 +22,7 @@ class GeminiProvider implements LLMProvider {
 
   async complete(systemPrompt: string, history: ChatTurn[], userMessage: string): Promise<string> {
     const model = this.client.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: systemPrompt,
     });
 
