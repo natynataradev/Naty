@@ -15,10 +15,7 @@ class GeminiProvider implements LLMProvider {
 
   private get client(): GoogleGenAI {
     if (!this._client) {
-      this._client = new GoogleGenAI({
-        apiKey: env.GEMINI_API_KEY,
-        httpOptions: { apiVersion: 'v1' },
-      });
+      this._client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
     }
     return this._client;
   }
@@ -30,7 +27,7 @@ class GeminiProvider implements LLMProvider {
     ];
 
     const response = await this.client.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-lite',
       config: { systemInstruction: systemPrompt },
       contents,
     });
