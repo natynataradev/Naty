@@ -15,7 +15,10 @@ class GeminiProvider implements LLMProvider {
 
   private get client(): GoogleGenAI {
     if (!this._client) {
-      this._client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+      this._client = new GoogleGenAI({
+        apiKey: env.GEMINI_API_KEY,
+        httpOptions: { apiVersion: 'v1' },
+      });
     }
     return this._client;
   }
