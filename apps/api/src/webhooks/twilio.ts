@@ -44,7 +44,8 @@ twilioRouter.post('/', (req: Request, res: Response) => {
     console.error('[webhook] error procesando mensaje:', err);
   });
 
-  res.status(200).send('');
+  res.setHeader('Content-Type', 'text/xml');
+  res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
 });
 
 async function handleIncomingMessage(message: IncomingMessage): Promise<void> {
