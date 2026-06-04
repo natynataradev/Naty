@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { env } from '../config/env.js';
 
 export interface LLMProvider {
@@ -11,30 +11,28 @@ export interface ChatTurn {
 }
 
 class GeminiProvider implements LLMProvider {
-  private _client: GoogleGenerativeAI | null = null;
+  private _client: GoogleGenAI | null = null;
 
-  private get client(): GoogleGenerativeAI {
+  private get client(): GoogleGenAI {
     if (!this._client) {
-      this._client = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+      this._client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
     }
     return this._client;
   }
 
   async complete(systemPrompt: string, history: ChatTurn[], userMessage: string): Promise<string> {
-    const model = this.client.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: systemPrompt,
+    const contents = [
+      ...history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
+      { role: 'user' as const, parts: [{ text: userMessage }] },
+    ];
+
+    const response = await this.client.models.generateContent({
+      model: 'gemini-2.0-flash',
+      config: { systemInstruction: systemPrompt },
+      contents,
     });
 
-    const chat = model.startChat({
-      history: history.map((t) => ({
-        role: t.role,
-        parts: [{ text: t.text }],
-      })),
-    });
-
-    const result = await chat.sendMessage(userMessage);
-    return result.response.text();
+    return response.text ?? '';
   }
 }
 

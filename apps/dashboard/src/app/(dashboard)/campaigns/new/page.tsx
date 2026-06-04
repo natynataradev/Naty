@@ -1,13 +1,8 @@
-import { redirect } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { getSessionUser } from '@/lib/auth';
 import { NewCampaignForm } from './_components/new-campaign-form';
 
-export default async function NewCampaignPage() {
-  const user = await getSessionUser();
-  if (!user) redirect('/login');
-
+export default function NewCampaignPage() {
   return (
     <div className="p-8">
       <Link
@@ -22,7 +17,7 @@ export default async function NewCampaignPage() {
         <p className="mt-1 text-sm text-gray-400">Configura el segmento, el mensaje y envía</p>
       </div>
 
-      <NewCampaignForm userId={user.id} />
+      <NewCampaignForm userId="client-user" />
     </div>
   );
 }

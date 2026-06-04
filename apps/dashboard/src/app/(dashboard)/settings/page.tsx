@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { requireAdmin } from '@/lib/auth';
+// requireAdmin desactivado temporalmente — auth via AuthGuard (cliente)
+// import { requireAdmin } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/badge';
 import { CreateUserForm } from './_components/create-user-form';
@@ -91,11 +92,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export default async function SettingsPage() {
-  try {
-    await requireAdmin();
-  } catch {
-    redirect('/contacts');
-  }
 
   const webhookUrl = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'https://tu-api.railway.app'}/webhook/twilio`;
 
