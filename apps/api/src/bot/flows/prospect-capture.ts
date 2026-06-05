@@ -22,7 +22,7 @@ export async function captureProspectData(ctx: BotContext, history: ChatTurn[]):
   let extracted: ProspectData = { name: null, interest: null };
 
   try {
-    const summary = history.map((t) => `${t.role === 'user' ? 'Usuario' : 'Naty'}: ${t.text}`).join('\n');
+    const summary = history.map((t) => `${t.role === 'user' ? 'Usuario' : 'Naty'}: ${t.content}`).join('\n');
     const raw = await llm.complete(EXTRACTION_PROMPT, [], summary);
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {

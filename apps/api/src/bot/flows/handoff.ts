@@ -37,7 +37,7 @@ async function loadHistory(conversationId: string): Promise<ChatTurn[]> {
   if (!data) return [];
 
   return data.map((m) => ({
-    role: m.direction === 'inbound' ? ('user' as const) : ('model' as const),
-    text: m.content,
+    role: m.direction === 'inbound' ? ('user' as const) : ('assistant' as const),
+    content: m.content,
   }));
 }

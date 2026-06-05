@@ -50,7 +50,7 @@ async function loadHistory(conversationId?: string): Promise<ChatTurn[]> {
   if (!messages) return [];
 
   return messages.map((m) => ({
-    role: m.direction === 'inbound' ? 'user' : 'model',
-    text: m.content,
+    role: m.direction === 'inbound' ? 'user' : 'assistant',
+    content: m.content,
   }));
 }

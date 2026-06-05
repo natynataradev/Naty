@@ -29,7 +29,7 @@ export const env = {
   META_WEBHOOK_VERIFY_TOKEN: optionalEnv('META_WEBHOOK_VERIFY_TOKEN', ''),
   META_WABA_ID: optionalEnv('META_WABA_ID', ''),
 
-  GEMINI_API_KEY: optionalEnv('GEMINI_API_KEY', ''),
+  ANTHROPIC_API_KEY: requireEnv('ANTHROPIC_API_KEY'),
 
   DEFAULT_SCHOOL_ID: optionalEnv('DEFAULT_SCHOOL_ID', ''),
 } as const;
