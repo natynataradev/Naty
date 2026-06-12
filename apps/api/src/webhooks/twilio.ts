@@ -11,14 +11,16 @@ twilioRouter.get('/', (req: Request, res: Response) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  if (mode === 'subscribe' && token === env.META_WEBHOOK_VERIFY_TOKEN) {
+  // Meta envia en formato: hub.mode=subscribe&hub.verify_token=naty2024&hub.challenge=...
+  if (mode === 'subscribe' && token === 'naty2024') {
     res.status(200).send(challenge);
+    console.log('[webhook] Meta verificó el webhook');
     return;
   }
 
-  const twilioToken = req.query['token'];
-  if (twilioToken === env.META_WEBHOOK_VERIFY_TOKEN || env.NODE_ENV === 'development') {
-    res.status(200).send('Webhook verificado');
+  // Fallback para desarrollo
+  if (env.NODE_ENV === 'development') {
+    res.status(200).send(challenge || 'ok');
     return;
   }
 
