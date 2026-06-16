@@ -36,6 +36,15 @@ twilioRouter.post('/', (req: Request, res: Response) => {
 
   console.log(`[webhook] mensaje de ${incoming.from}: ${incoming.body}`);
 
+  // Ignorar comandos reservados del Twilio Sandbox
+  const TWILIO_RESERVED = /^(reset|stop|start|help|unstop|join\s+\S+)$/i;
+  if (TWILIO_RESERVED.test(incoming.body.trim())) {
+    console.log(`[webhook] comando Twilio ignorado: ${incoming.body}`);
+    res.setHeader('Content-Type', 'text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    return;
+  }
+
   handleIncomingMessage(incoming).catch((err) => {
     console.error('[webhook] error procesando mensaje:', err);
   });
