@@ -1,17 +1,26 @@
 import { supabase } from '../db/client.js';
 import type { BotContext, BotFlowResult } from './types.js';
 
-const PRIVACY_NOTICE = `¡Hola! Soy Naty, asistente virtual de Natara La Cima 🏊
+// Mensaje del primer contacto - debe coincidir con el system prompt
+// {LINK_AVISO} se sustituye en runtime por la URL real del aviso de privacidad.
+const PRIVACY_NOTICE_TEMPLATE =
+  'Antes de poder ayudarte, necesito que respondas con la palabra ACEPTO nuestro aviso de privacidad y protección de datos personales que encontrarás en {LINK_AVISO}';
 
-Antes de continuar, necesito tu autorización para procesar tus datos personales conforme al Aviso de Privacidad de Natara La Cima.
+const PRIVACY_LINK = process.env.PRIVACY_POLICY_URL ?? process.env.PRIVACY_NOTICE_URL ?? 'https://natara.mx/privacidad';
 
-Puedes consultarlo en: https://natara.mx/privacidad
-
-Para continuar, responde *ACEPTO*.
-
-Si no respondes en 24 horas, tu conversación será cerrada automáticamente y no guardaremos ningún dato.`;
-
+const ACCEPT_VARIANTS = ['ACEPTO', 'ACEPT0', 'OK ACEPTO', 'SI ACEPTO', 'SÍ ACEPTO', 'SI', 'SÍ'];
 const PRIVACY_TIMEOUT_HOURS = 24;
+
+function buildPrivacyNotice(): string {
+  return PRIVACY_NOTICE_TEMPLATE.replace('{LINK_AVISO}', PRIVACY_LINK);
+}
+
+function isAcceptance(text: string): boolean {
+  const normalized = text.trim().toUpperCase().replace(/\s+/g, ' ');
+  if (ACCEPT_VARIANTS.includes(normalized)) return true;
+  // Acepta respuestas tipo "acepto", "si, acepto", "ok acepto"
+  return /^(\s*)?(SI|SÍ|OK|VA|SALE|CLARO)[,.\s]+(ACEPTO)?/.test(normalized + ' ') || normalized === 'ACEPTO';
+}
 
 export async function handlePrivacyFlow(ctx: BotContext): Promise<BotFlowResult> {
   if (ctx.acceptedPrivacy) {
@@ -24,28 +33,29 @@ export async function handlePrivacyFlow(ctx: BotContext): Promise<BotFlowResult>
 
     if (hoursSinceSent >= PRIVACY_TIMEOUT_HOURS) {
       await closeExpiredPrivacy(ctx);
+      // Regla del doc: "cierra la conversación sin procesar ningún dato"
       return { action: 'noop' };
     }
 
-    const normalized = ctx.messageBody.trim().toUpperCase();
-    if (normalized === 'ACEPTO') {
+    if (isAcceptance(ctx.messageBody)) {
       await recordPrivacyAccepted(ctx);
       return {
         action: 'responded',
         message:
-          '¡Gracias por aceptar! Ahora sí, ¿en qué puedo ayudarte? Puedes preguntarme sobre horarios, precios, clases de prueba o inscripciones 😊',
+          '¡Gracias! Soy Naty, asistente virtual de Natara Escuela de Natación — La Cima. En qué te puedo ayudar 😊',
       };
     }
 
+    // No insistir demasiado: solo redirigir amablemente una vez
     return {
       action: 'responded',
       message:
-        'Para poder ayudarte necesito que respondas *ACEPTO* para confirmar que has leído el Aviso de Privacidad.',
+        'Para poder seguir necesito que respondas ACEPTO al aviso de privacidad. Si tienes dudas del aviso, dime y te conecto con el equipo.',
     };
   }
 
   await recordPrivacySent(ctx);
-  return { action: 'responded', message: PRIVACY_NOTICE };
+  return { action: 'responded', message: buildPrivacyNotice() };
 }
 
 async function recordPrivacySent(ctx: BotContext): Promise<void> {
