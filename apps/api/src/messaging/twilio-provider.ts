@@ -13,9 +13,14 @@ export class TwilioProvider implements MessagingProvider {
   }
 
   async send(message: OutgoingMessage): Promise<void> {
+    let toNumber = message.to.replace('whatsapp:', '').trim();
+    const fullTo = `whatsapp:${toNumber}`;
+
+    console.log(`[twilio] sending to: ${fullTo}`);
+
     await this.client.messages.create({
       from: env.TWILIO_WHATSAPP_NUMBER,
-      to: message.to.startsWith('whatsapp:') ? message.to : `whatsapp:${message.to}`,
+      to: fullTo,
       body: message.body,
     });
   }
