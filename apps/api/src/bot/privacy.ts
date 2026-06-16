@@ -18,8 +18,8 @@ function buildPrivacyNotice(): string {
 function isAcceptance(text: string): boolean {
   const normalized = text.trim().toUpperCase().replace(/\s+/g, ' ');
   if (ACCEPT_VARIANTS.includes(normalized)) return true;
-  // Acepta respuestas tipo "acepto", "si, acepto", "ok acepto"
-  return /^(\s*)?(SI|SÍ|OK|VA|SALE|CLARO)[,.\s]+(ACEPTO)?/.test(normalized + ' ') || normalized === 'ACEPTO';
+  // Solo aceptar si incluye explícitamente "ACEPTO"
+  return normalized.includes('ACEPTO');
 }
 
 export async function handlePrivacyFlow(ctx: BotContext): Promise<BotFlowResult> {
