@@ -22,9 +22,10 @@ export interface GeneralAttentionResult {
 export async function handleGeneralAttention(ctx: BotContext): Promise<BotFlowResult> {
   const history = await loadHistory(ctx.conversationId);
 
-  const systemPrompt = ctx.contactName
-    ? `${NATY_SYSTEM_PROMPT}\n\nEl nombre de la persona con quien hablas es: ${ctx.contactName}. Úsalo ocasionalmente para personalizar la conversación.`
-    : NATY_SYSTEM_PROMPT;
+  const nameNote = ctx.contactName
+    ? `El nombre de la persona con quien hablas es: ${ctx.contactName}. Úsalo ocasionalmente.`
+    : '';
+  const systemPrompt = `${NATY_SYSTEM_PROMPT}\n\nIMPORTANTE: El usuario ya aceptó el aviso de privacidad. NO vuelvas a pedirlo ni lo menciones. ${nameNote}`.trim();
 
   let reply: string;
   try {

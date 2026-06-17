@@ -17,6 +17,21 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
     return result;
   }
 
+  // Primer mensaje tras aceptar privacidad — capturar nombre
+  if (!ctx.contactName && ctx.contactId) {
+    const name = ctx.messageBody.trim();
+    await supabase
+      .from('contacts')
+      .update({ name })
+      .eq('id', ctx.contactId);
+    const result: BotFlowResult = {
+      action: 'responded',
+      message: `Mucho gusto, ${name}. ¿En qué te puedo ayudar? 😊`,
+    };
+    await persistOutboundIfResponded({ ...ctx, contactName: name }, result);
+    return result;
+  }
+
   // handleGeneralAttention ya incluye el cierre de handoff (cuando aplique)
   const result = await handleGeneralAttention(ctx);
   await persistOutboundIfResponded(ctx, result);
