@@ -75,11 +75,23 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
 
   const conversationId = await ensureConversation(contact.id);
 
-  const { data: conversation } = await supabase
-    .from('conversations')
-    .select('id, started_at')
-    .eq('id', conversationId ?? '')
-    .maybeSingle();
+  // privacySentAt solo se setea si hay mensajes previos en la conversación,
+  // lo que confirma que el aviso ya fue enviado realmente.
+  let privacySentAt: Date | undefined;
+  if (conversationId) {
+    const { count } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId);
+    if (count && count > 0) {
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('started_at')
+        .eq('id', conversationId)
+        .maybeSingle();
+      privacySentAt = conversation ? new Date(conversation.started_at) : undefined;
+    }
+  }
 
   return {
     phone,
@@ -87,7 +99,7 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
     contactId: contact.id,
     conversationId,
     acceptedPrivacy: contact.accepted_privacy,
-    privacySentAt: conversation ? new Date(conversation.started_at) : undefined,
+    privacySentAt,
     contactName: contact.name ?? undefined,
   };
 }
