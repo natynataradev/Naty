@@ -4,7 +4,7 @@ import type { BotContext, BotFlowResult } from './types.js';
 // Mensaje del primer contacto - debe coincidir con el system prompt
 // {LINK_AVISO} se sustituye en runtime por la URL real del aviso de privacidad.
 const PRIVACY_NOTICE_TEMPLATE =
-  'Antes de poder ayudarte, necesito que respondas con la palabra ACEPTO nuestro aviso de privacidad y protección de datos personales que encontrarás en {LINK_AVISO}';
+  'Antes de poder ayudarte, necesito que respondas con la palabra *ACEPTO* nuestro aviso de privacidad y protección de datos personales que encontrarás en {LINK_AVISO}';
 
 const PRIVACY_LINK = process.env.PRIVACY_POLICY_URL ?? process.env.PRIVACY_NOTICE_URL ?? 'https://natara.mx/privacidad';
 
