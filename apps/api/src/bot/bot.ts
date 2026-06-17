@@ -21,7 +21,7 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
   if (ctx.conversationStatus === 'handoff') {
     const result: BotFlowResult = {
       action: 'responded',
-      message: 'Tu mensaje fue recibido. El equipo de Natara ya está al tanto y en breve se ponen en contacto contigo 😊',
+      message: 'Tu mensaje fue recibido. Alguien del equipo Natara ya está al tanto y en breve se pone en contacto contigo 😊',
     };
     await persistOutboundIfResponded(ctx, result);
     return result;
