@@ -8,6 +8,7 @@ export interface BotContext {
   messageBody: string;
   contactId?: string;
   conversationId?: string;
+  conversationStatus?: string;
   acceptedPrivacy: boolean;
   privacySentAt?: Date;
   contactName?: string;

@@ -17,6 +17,16 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
     return result;
   }
 
+  // Conversación en handoff — el equipo humano ya tomó el caso
+  if (ctx.conversationStatus === 'handoff') {
+    const result: BotFlowResult = {
+      action: 'responded',
+      message: 'Tu mensaje fue recibido. El equipo de Natara ya está al tanto y en breve se ponen en contacto contigo 😊',
+    };
+    await persistOutboundIfResponded(ctx, result);
+    return result;
+  }
+
   // Primer mensaje tras aceptar privacidad — capturar nombre
   if (!ctx.contactName && ctx.contactId) {
     const raw = ctx.messageBody.trim();
@@ -60,7 +70,7 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
       .select('id')
       .single();
 
-    const conversationId = newContact
+    const conv = newContact
       ? await ensureConversation(newContact.id)
       : undefined;
 
@@ -68,12 +78,15 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
       phone,
       messageBody: body,
       contactId: newContact?.id,
-      conversationId,
+      conversationId: conv?.id,
+      conversationStatus: conv?.status,
       acceptedPrivacy: false,
     };
   }
 
-  const conversationId = await ensureConversation(contact.id);
+  const conv = await ensureConversation(contact.id);
+  const conversationId = conv?.id;
+  const conversationStatus = conv?.status;
 
   // privacySentAt solo se setea si hay mensajes previos en la conversación,
   // lo que confirma que el aviso ya fue enviado realmente.
@@ -98,6 +111,7 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
     messageBody: body,
     contactId: contact.id,
     conversationId,
+    conversationStatus,
     acceptedPrivacy: contact.accepted_privacy,
     privacySentAt,
     contactName: contact.name ?? undefined,
@@ -133,17 +147,17 @@ async function persistOutboundIfResponded(ctx: BotContext, result: BotFlowResult
   });
 }
 
-async function ensureConversation(contactId: string): Promise<string | undefined> {
+async function ensureConversation(contactId: string): Promise<{ id: string; status: string } | undefined> {
   const { data: existing } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id, status')
     .eq('contact_id', contactId)
-    .in('status', ['active'])
+    .in('status', ['active', 'handoff'])
     .order('started_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing.id;
+  if (existing) return { id: existing.id, status: existing.status };
 
   const { data: created } = await supabase
     .from('conversations')
@@ -152,8 +166,8 @@ async function ensureConversation(contactId: string): Promise<string | undefined
       contact_id: contactId,
       status: 'active',
     })
-    .select('id')
+    .select('id, status')
     .single();
 
-  return created?.id;
+  return created ? { id: created.id, status: created.status } : undefined;
 }
