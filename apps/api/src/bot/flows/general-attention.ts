@@ -61,7 +61,7 @@ async function loadHistory(conversationId?: string): Promise<ChatTurn[]> {
     .from('messages')
     .select('direction, content')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true })
+    .order('timestamp', { ascending: true })
     .limit(MAX_HISTORY_TURNS * 2);
 
   if (!messages) return [];
