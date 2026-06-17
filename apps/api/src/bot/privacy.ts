@@ -42,7 +42,7 @@ export async function handlePrivacyFlow(ctx: BotContext): Promise<BotFlowResult>
       return {
         action: 'responded',
         message:
-          '¡Gracias! Soy Naty, asistente virtual de Natara Escuela de Natación — La Cima. En qué te puedo ayudar 😊',
+          '¡Gracias! Soy Naty, asistente virtual de Natara Escuela de Natación — La Cima. ¿Con quién tengo el gusto? 😊',
       };
     }
 
