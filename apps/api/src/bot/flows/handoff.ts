@@ -38,8 +38,13 @@ export async function finalizeHandoff(
 
   console.log(`[handoff] contacto ${ctx.phone} derivado a humano. Razón: ${reason}`);
 
-  // Limpiamos cualquier HANDOFF crudo que el LLM haya podido dejar escapar
-  const cleanReply = llmReply.replace(/HANDOFF/gi, '').trim();
+  // Limpiamos el token HANDOFF y cualquier oración sobre Sol/Karla que el LLM genere
+  // (el HANDOFF_INVITE ya los menciona — esta limpieza evita la duplicación)
+  const cleanReply = llmReply
+    .replace(/HANDOFF/gi, '')
+    .replace(/[^.!?]*\b(Sol|Karla)\b[^.!?]*[.!?]?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
   return {
     finalMessage: `${cleanReply}${HANDOFF_INVITE}`,
