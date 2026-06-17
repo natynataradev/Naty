@@ -7,7 +7,7 @@ import type { ChatTurn } from '../llm.js';
 // Por eso el LLM genera la respuesta informativa, y al finalizamos el handoff
 // agregamos una invitación natural a Sol/Karla y a la dirección.
 const HANDOFF_INVITE =
-  ' Sol o Karla del equipo de Natara se pondrán en contacto contigo en breve 🙌';
+  ' Sol o Karla del equipo de Natara se pondrán en contacto contigo en breve 🙌 Mientras tanto, puedes conocernos más en Instagram @natara.la.cima o visitarnos en Av. La Cima #151, Zapopan. ¡Te esperamos!';
 
 export interface HandoffOutcome {
   finalMessage: string;
