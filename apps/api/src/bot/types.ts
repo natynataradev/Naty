@@ -10,4 +10,5 @@ export interface BotContext {
   conversationId?: string;
   acceptedPrivacy: boolean;
   privacySentAt?: Date;
+  contactName?: string;
 }

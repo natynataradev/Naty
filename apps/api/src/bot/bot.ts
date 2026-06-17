@@ -2,7 +2,6 @@ import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
 import { handlePrivacyFlow } from './privacy.js';
 import { handleGeneralAttention } from './flows/general-attention.js';
-import { handleHandoff } from './flows/handoff.js';
 import type { BotContext, BotFlowResult } from './types.js';
 
 const DEFAULT_SCHOOL_ID = env.DEFAULT_SCHOOL_ID;
@@ -18,14 +17,8 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
     return result;
   }
 
+  // handleGeneralAttention ya incluye el cierre de handoff (cuando aplique)
   const result = await handleGeneralAttention(ctx);
-
-  if (result.action === 'handoff') {
-    const handoffResult = await handleHandoff(ctx, result.reason);
-    await persistOutboundIfResponded(ctx, handoffResult);
-    return handoffResult;
-  }
-
   await persistOutboundIfResponded(ctx, result);
   return result;
 }
@@ -33,7 +26,7 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
 async function buildContext(phone: string, body: string): Promise<BotContext> {
   const { data: contact } = await supabase
     .from('contacts')
-    .select('id, accepted_privacy, accepted_at')
+    .select('id, accepted_privacy, accepted_at, name')
     .eq('school_id', DEFAULT_SCHOOL_ID)
     .eq('phone', phone)
     .maybeSingle();
@@ -79,6 +72,7 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
     conversationId,
     acceptedPrivacy: contact.accepted_privacy,
     privacySentAt: conversation ? new Date(conversation.started_at) : undefined,
+    contactName: contact.name ?? undefined,
   };
 }
 

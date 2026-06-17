@@ -22,9 +22,13 @@ export interface GeneralAttentionResult {
 export async function handleGeneralAttention(ctx: BotContext): Promise<BotFlowResult> {
   const history = await loadHistory(ctx.conversationId);
 
+  const systemPrompt = ctx.contactName
+    ? `${NATY_SYSTEM_PROMPT}\n\nEl nombre de la persona con quien hablas es: ${ctx.contactName}. Úsalo ocasionalmente para personalizar la conversación.`
+    : NATY_SYSTEM_PROMPT;
+
   let reply: string;
   try {
-    reply = await llm.complete(NATY_SYSTEM_PROMPT, history, ctx.messageBody);
+    reply = await llm.complete(systemPrompt, history, ctx.messageBody);
   } catch (err) {
     console.error('[llm] error:', String(err));
     return { action: 'responded', message: FALLBACK_ERROR };

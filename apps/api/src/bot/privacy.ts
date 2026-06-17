@@ -24,6 +24,18 @@ function isAcceptance(text: string): boolean {
 
 export async function handlePrivacyFlow(ctx: BotContext): Promise<BotFlowResult> {
   if (ctx.acceptedPrivacy) {
+    // Si ya aceptó pero aún no tiene nombre, capturar este mensaje como nombre
+    if (!ctx.contactName && ctx.contactId) {
+      const name = ctx.messageBody.trim();
+      await supabase
+        .from('contacts')
+        .update({ name })
+        .eq('id', ctx.contactId);
+      return {
+        action: 'responded',
+        message: `Mucho gusto, ${name}. ¿En qué te puedo ayudar? 😊`,
+      };
+    }
     return { action: 'noop' };
   }
 
