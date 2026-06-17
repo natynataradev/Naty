@@ -7,7 +7,7 @@ import type { ChatTurn } from '../llm.js';
 // Por eso el LLM genera la respuesta informativa, y al finalizamos el handoff
 // agregamos una invitación natural a Sol/Karla y a la dirección.
 const HANDOFF_INVITE =
-  ' Si quieres, Sol o Karla te pueden orientar mejor — estamos en Av. La Cima #151, Zapopan, Jalisco, o por WhatsApp al 33 1908 4177 🙌';
+  ' Sol o Karla del equipo de Natara se pondrán en contacto contigo en breve 🙌';
 
 export interface HandoffOutcome {
   finalMessage: string;
