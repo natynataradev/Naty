@@ -61,12 +61,12 @@ async function loadHistory(conversationId?: string): Promise<ChatTurn[]> {
     .from('messages')
     .select('direction, content')
     .eq('conversation_id', conversationId)
-    .order('timestamp', { ascending: true })
+    .order('timestamp', { ascending: false })
     .limit(MAX_HISTORY_TURNS * 2);
 
   if (!messages) return [];
 
-  return messages.map((m) => ({
+  return messages.reverse().map((m) => ({
     role: m.direction === 'inbound' ? 'user' : 'assistant',
     content: m.content,
   }));
