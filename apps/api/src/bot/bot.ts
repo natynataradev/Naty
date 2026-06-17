@@ -19,7 +19,8 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
 
   // Primer mensaje tras aceptar privacidad — capturar nombre
   if (!ctx.contactName && ctx.contactId) {
-    const name = ctx.messageBody.trim();
+    const raw = ctx.messageBody.trim();
+    const name = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     await supabase
       .from('contacts')
       .update({ name })
