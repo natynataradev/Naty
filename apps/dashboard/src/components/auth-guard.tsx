@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Sidebar } from './sidebar';
+import { api } from '@/lib/api';
 import type { UserRole } from '@naty/shared';
 
 interface Profile {
@@ -22,13 +23,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         router.replace('/login');
+        setChecked(true);
       } else {
-        setProfile({
-          name: session.user.email?.split('@')[0] ?? 'Usuario',
-          role: 'admin',
-        });
+        api.get<Profile>('/users/me')
+          .then((profileData) => {
+            setProfile(profileData);
+            setChecked(true);
+          })
+          .catch((err) => {
+            console.error('Error fetching user profile:', err);
+            supabase.auth.signOut().then(() => {
+              router.replace('/login');
+              setChecked(true);
+            });
+          });
       }
-      setChecked(true);
     });
   }, [router]);
 
@@ -43,9 +52,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!profile) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-naty-dark text-white">
+    <div className="flex h-screen overflow-hidden bg-naty-dark text-white animate-fadeIn">
       <Sidebar userName={profile.name} userRole={profile.role} />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto p-6 pt-20 md:p-8 md:pt-8">{children}</main>
     </div>
   );
 }

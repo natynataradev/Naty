@@ -1,8 +1,13 @@
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { NewCampaignForm } from './_components/new-campaign-form';
+import { createClient } from '@/lib/supabase/server';
 
-export default function NewCampaignPage() {
+export default async function NewCampaignPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id ?? 'client-user';
+
   return (
     <div className="p-8">
       <Link
@@ -17,7 +22,7 @@ export default function NewCampaignPage() {
         <p className="mt-1 text-sm text-gray-400">Configura el segmento, el mensaje y envía</p>
       </div>
 
-      <NewCampaignForm userId="client-user" />
+      <NewCampaignForm userId={userId} />
     </div>
   );
 }

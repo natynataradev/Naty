@@ -22,6 +22,7 @@ export async function listContacts(filters: ContactFilters): Promise<PaginatedCo
 
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.source) query = query.eq('source', filters.source);
+  if (filters.type) query = query.eq('type', filters.type);
   if (filters.from) query = query.gte('created_at', filters.from);
   if (filters.to) query = query.lte('created_at', filters.to);
   if (filters.search) {
@@ -132,6 +133,7 @@ export async function exportContacts(filters: ContactFilters): Promise<Contact[]
 
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.source) query = query.eq('source', filters.source);
+  if (filters.type) query = query.eq('type', filters.type);
   if (filters.from) query = query.gte('created_at', filters.from);
   if (filters.to) query = query.lte('created_at', filters.to);
   if (filters.search) {
@@ -141,4 +143,21 @@ export async function exportContacts(filters: ContactFilters): Promise<Contact[]
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Contact[];
+}
+
+export async function bulkUpsertContacts(contacts: Omit<CreateContactInput, 'school_id'>[]): Promise<Contact[]> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .upsert(
+      contacts.map((c) => ({
+        ...c,
+        school_id: SCHOOL_ID,
+        source: 'import',
+      })),
+      { onConflict: 'school_id,phone' }
+    )
+    .select();
+
+  if (error) throw error;
+  return data as Contact[];
 }

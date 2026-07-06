@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from './supabase/server';
 import type { UserRole } from '@naty/shared';
 
@@ -32,12 +33,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
 export async function requireAuth(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) throw new Error('No autenticado');
+  if (!user) redirect('/login');
   return user;
 }
 
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireAuth();
-  if (user.role !== 'admin') throw new Error('Acceso restringido a administradores');
+  if (user.role !== 'admin') redirect('/login');
   return user;
 }

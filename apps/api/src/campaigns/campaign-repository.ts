@@ -68,3 +68,36 @@ export async function getSegmentContacts(segment: CampaignSegment): Promise<{ id
   if (error) throw error;
   return data ?? [];
 }
+
+export async function getPendingScheduledCampaigns(): Promise<Campaign[]> {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('school_id', SCHOOL_ID)
+    .eq('status', 'scheduled')
+    .lte('scheduled_at', new Date().toISOString());
+
+  if (error) throw error;
+  return (data ?? []) as Campaign[];
+}
+
+export async function updateCampaignSchedule(id: string, scheduled_at: string): Promise<void> {
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ scheduled_at, status: 'scheduled' })
+    .eq('id', id)
+    .eq('school_id', SCHOOL_ID);
+
+  if (error) throw error;
+}
+
+export async function cancelCampaign(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ status: 'draft', scheduled_at: null })
+    .eq('id', id)
+    .eq('school_id', SCHOOL_ID);
+
+  if (error) throw error;
+}
+

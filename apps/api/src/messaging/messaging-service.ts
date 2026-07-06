@@ -1,15 +1,15 @@
-import type { MessagingProvider, OutgoingMessage } from './types.js';
-import { TwilioProvider } from './twilio-provider.js';
+import type { MessagingProvider } from './types.js';
+import { MetaProvider } from './meta-provider.js';
 
 export class MessagingService {
   private provider: MessagingProvider;
 
   constructor(provider?: MessagingProvider) {
-    this.provider = provider ?? new TwilioProvider();
+    this.provider = provider ?? new MetaProvider();
   }
 
-  async send(to: string, body: string): Promise<void> {
-    await this.provider.send({ to, body });
+  async send(to: string, body: string, mediaUrl?: string, templateName?: string, templateParams?: string[]): Promise<void> {
+    await this.provider.send({ to, body, mediaUrl, templateName, templateParams });
   }
 
   parseIncoming(payload: Record<string, string>) {

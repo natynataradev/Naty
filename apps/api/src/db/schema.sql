@@ -115,6 +115,21 @@ CREATE TRIGGER contacts_updated_at
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- =============================================
+-- TABLA: templates (plantillas de mensajes)
+-- =============================================
+CREATE TABLE IF NOT EXISTS templates (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id   UUID NOT NULL,
+  name        TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  created_by  UUID NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_templates_school_id ON templates(school_id);
+CREATE INDEX IF NOT EXISTS idx_templates_created_at ON templates(school_id, created_at DESC);
+
+-- =============================================
 -- RLS: habilitar Row Level Security
 -- =============================================
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;

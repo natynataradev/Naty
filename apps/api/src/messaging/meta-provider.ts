@@ -11,20 +11,66 @@ export class MetaProvider implements MessagingProvider {
 
     const url = `https://graph.facebook.com/v25.0/${env.META_PHONE_NUMBER_ID}/messages`;
 
+    const requestBody: any = {
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+    };
+
+    if (message.templateName) {
+      requestBody.type = 'template';
+      requestBody.template = {
+        name: message.templateName,
+        language: {
+          code: env.META_TEMPLATE_LANGUAGE
+        },
+        components: []
+      };
+
+      if (message.templateParams && message.templateParams.length > 0) {
+        requestBody.template.components.push({
+          type: 'body',
+          parameters: message.templateParams.map(param => ({
+            type: 'text',
+            text: param
+          }))
+        });
+      }
+
+      if (message.mediaUrl) {
+        requestBody.template.components.push({
+          type: 'header',
+          parameters: [
+            {
+              type: 'image',
+              image: {
+                link: message.mediaUrl
+              }
+            }
+          ]
+        });
+      }
+    } else {
+      if (message.mediaUrl) {
+        requestBody.type = 'image';
+        requestBody.image = {
+          link: message.mediaUrl,
+          caption: message.body,
+        };
+      } else {
+        requestBody.type = 'text';
+        requestBody.text = {
+          body: message.body,
+        };
+      }
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${env.META_ACCESS_TOKEN}`,
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'text',
-        text: {
-          body: message.body,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -38,16 +84,31 @@ export class MetaProvider implements MessagingProvider {
     console.log('Message sent successfully:', result);
   }
 
-  parseIncoming(payload: Record<string, string>): IncomingMessage {
-    return {
-      from: '',
-      to: '',
-      body: '',
-      messageSid: '',
-    };
+  parseIncoming(payload: any): IncomingMessage {
+    try {
+      const changeValue = payload?.entry?.[0]?.changes?.[0]?.value;
+      const message = changeValue?.messages?.[0];
+      const contact = changeValue?.contacts?.[0];
+
+      if (!message) {
+        return { from: '', to: '', body: '', messageSid: '' };
+      }
+
+      return {
+        from: message.from,
+        to: changeValue?.metadata?.display_phone_number || '',
+        body: message.type === 'text' ? (message.text?.body || '') : `[Mensaje tipo: ${message.type}]`,
+        messageSid: message.id,
+        profileName: contact?.profile?.name,
+      };
+    } catch (e) {
+      console.error('[MetaProvider] Error parsing incoming payload:', e);
+      return { from: '', to: '', body: '', messageSid: '' };
+    }
   }
 
   validateSignature(signature: string, url: string, params: Record<string, string>): boolean {
+    // La validación de firma de Meta (X-Hub-Signature-256) se puede implementar en el webhook.
     return true;
   }
 }

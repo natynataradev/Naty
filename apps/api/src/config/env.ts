@@ -28,8 +28,23 @@ export const env = {
   META_PHONE_NUMBER_ID: optionalEnv('META_PHONE_NUMBER_ID', ''),
   META_WEBHOOK_VERIFY_TOKEN: optionalEnv('META_WEBHOOK_VERIFY_TOKEN', ''),
   META_WABA_ID: optionalEnv('META_WABA_ID', ''),
+  META_TEMPLATE_LANGUAGE: optionalEnv('META_TEMPLATE_LANGUAGE', 'es_MX'),
 
-  ANTHROPIC_API_KEY: requireEnv('ANTHROPIC_API_KEY'),
+  GEMINI_API_KEY: optionalEnv('GEMINI_API_KEY', ''),
+  GEMINI_MODEL: optionalEnv('GEMINI_MODEL', 'gemini-2.5-flash'),
+
+  ANTHROPIC_API_KEY: optionalEnv('ANTHROPIC_API_KEY', ''),
+  ANTHROPIC_MODEL: optionalEnv('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+
+  LLM_PROVIDER: optionalEnv('LLM_PROVIDER', 'gemini'),
+
+  MESSAGING_PROVIDER: optionalEnv('MESSAGING_PROVIDER', 'twilio'),
+
+  PRIVACY_POLICY_URL: optionalEnv('PRIVACY_POLICY_URL', ''),
 
   DEFAULT_SCHOOL_ID: optionalEnv('DEFAULT_SCHOOL_ID', ''),
 } as const;
+
+if (!env.GEMINI_API_KEY && !env.ANTHROPIC_API_KEY) {
+  throw new Error('✗ Naty API Startup Error: Al menos una clave de API para LLM (GEMINI_API_KEY o ANTHROPIC_API_KEY) debe estar configurada en las variables de entorno.');
+}

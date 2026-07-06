@@ -21,6 +21,7 @@ export interface CampaignSegment {
   source?: string[];
   from?: string;
   to?: string;
+  media_url?: string;
 }
 
 export interface CreateCampaignInput {

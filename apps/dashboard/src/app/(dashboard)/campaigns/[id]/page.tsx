@@ -1,12 +1,25 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/badge';
 import type { Campaign } from '@naty/shared';
+import { safeLocaleDateString, safeLocaleString } from '@/lib/date-utils';
+import { CampaignActions } from './_components/campaign-actions';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+interface Recipient {
+  id: string;
+  name: string | null;
+  phone: string;
+}
+
+interface RecipientsResponse {
+  total: number;
+  contacts: Recipient[];
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -35,6 +48,8 @@ function MetricCard({ label, value, sub }: { label: string; value: number; sub?:
   );
 }
 
+export const revalidate = 0;
+
 export default async function CampaignDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -45,57 +60,88 @@ export default async function CampaignDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // Cargar destinatarios del segmento para scheduled/draft/completed
+  let recipients: RecipientsResponse = { total: 0, contacts: [] };
+  try {
+    recipients = await api.get<RecipientsResponse>(`/campaigns/${id}/recipients`);
+  } catch {
+    // no crítico
+  }
+
   const total = campaign.sent_count + campaign.failed_count;
   const deliveryRate = total > 0 ? Math.round((campaign.delivered_count / total) * 100) : 0;
 
+  // Texto del mensaje (si el template_id no es UUID, es el texto directo)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaign.template_id);
+  const messagePreview = isUuid ? '(Cargado desde plantilla)' : campaign.template_id;
+
   return (
-    <div className="p-8">
+    <div className="p-8 space-y-6">
       <Link
         href="/campaigns"
-        className="mb-6 flex items-center gap-1 text-sm text-gray-400 transition hover:text-white"
+        className="mb-2 flex items-center gap-1 text-sm text-gray-400 transition hover:text-white"
       >
         <ChevronLeft size={14} /> Volver a campañas
       </Link>
 
-      <div className="mb-6 flex items-start justify-between">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">{campaign.name}</h1>
             <Badge
               label={STATUS_LABELS[campaign.status] ?? campaign.status}
               variant={STATUS_VARIANTS[campaign.status] ?? 'gray'}
+              showDot={campaign.status === 'sending' || campaign.status === 'scheduled'}
             />
           </div>
           <p className="mt-1 text-sm text-gray-400">
-            Creada el {new Date(campaign.created_at).toLocaleDateString('es-MX')}
-            {campaign.sent_at && ` · Enviada el ${new Date(campaign.sent_at).toLocaleDateString('es-MX')}`}
+            Creada el {safeLocaleDateString(campaign.created_at, { day: 'numeric', month: 'numeric', year: 'numeric' })}
+            {campaign.sent_at && ` · Enviada el ${safeLocaleDateString(campaign.sent_at, { day: 'numeric', month: 'numeric', year: 'numeric' })}`}
+            {campaign.scheduled_at && campaign.status === 'scheduled' && (
+              <span className="ml-2 text-naty-blue font-semibold">
+                · Programada para {safeLocaleString(campaign.scheduled_at)}
+              </span>
+            )}
           </p>
         </div>
 
-        {campaign.status === 'draft' && (
-          <form action={`/api/campaigns/${id}/send`} method="POST">
-            <Link
-              href={`/campaigns/${id}/send`}
-              className="flex items-center gap-2 rounded-lg bg-naty-green px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              <Send size={14} /> Enviar ahora
-            </Link>
-          </form>
-        )}
+        {/* Acciones (cancelar / reprogramar / enviar) */}
+        <CampaignActions campaignId={id} status={campaign.status} scheduledAt={campaign.scheduled_at} />
       </div>
 
-      {/* Métricas */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Enviados" value={campaign.sent_count} />
-        <MetricCard label="Entregados" value={campaign.delivered_count} sub={`${deliveryRate}% tasa de entrega`} />
-        <MetricCard label="Fallidos" value={campaign.failed_count} />
-        <MetricCard label="Total segmento" value={total} />
-      </div>
+      {/* Métricas — solo para campañas con envíos */}
+      {(campaign.status === 'completed' || campaign.status === 'sending' || campaign.status === 'failed') && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="Enviados" value={campaign.sent_count} />
+          <MetricCard label="Entregados" value={campaign.delivered_count} sub={`${deliveryRate}% tasa de entrega`} />
+          <MetricCard label="Fallidos" value={campaign.failed_count} />
+          <MetricCard label="Total segmento" value={recipients.total || total} />
+        </div>
+      )}
 
-      {/* Info de segmento */}
+      {/* Contenido del mensaje */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-          Configuración
+          Contenido del mensaje
+        </h2>
+        <div className="inline-block max-w-sm rounded-2xl rounded-tl-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white shadow">
+          <p className="text-xs text-gray-400 italic mb-1">Hola [nombre del contacto],</p>
+          <p className="whitespace-pre-wrap leading-relaxed text-gray-200">
+            {messagePreview}
+          </p>
+          {(campaign.segment as any)?.media_url && (
+            <p className="mt-2 text-[10px] text-naty-blue font-mono truncate">
+              📎 Imagen adjunta
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Configuración del segmento */}
+      <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+          Configuración del segmento
         </h2>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -113,13 +159,45 @@ export default async function CampaignDetailPage({ params }: PageProps) {
           {campaign.scheduled_at && (
             <div>
               <dt className="text-gray-500">Programada para</dt>
-              <dd className="mt-1 text-white">
-                {new Date(campaign.scheduled_at).toLocaleString('es-MX')}
-              </dd>
+              <dd className="mt-1 text-white">{safeLocaleString(campaign.scheduled_at)}</dd>
             </div>
           )}
         </dl>
       </div>
+
+      {/* Tabla de destinatarios */}
+      {recipients.total > 0 && (
+        <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/5 flex items-center gap-2">
+            <Users size={16} className="text-gray-500" />
+            <h2 className="text-sm font-semibold text-gray-300">
+              {campaign.status === 'scheduled' || campaign.status === 'draft'
+                ? `Destinatarios del segmento (${recipients.total})`
+                : `Destinatarios contactados (${recipients.total})`}
+            </h2>
+          </div>
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-[#0d0d18]">
+                <tr className="border-b border-white/5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3">Nombre</th>
+                  <th className="px-6 py-3">Teléfono</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {recipients.contacts.map((r) => (
+                  <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-6 py-3 text-white font-medium">
+                      {r.name ?? <span className="text-gray-600 italic">Sin nombre</span>}
+                    </td>
+                    <td className="px-6 py-3 font-mono text-gray-400">{r.phone}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

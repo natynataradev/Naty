@@ -1,6 +1,5 @@
 import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
-import { handlePrivacyFlow } from './privacy.js';
 import { handleGeneralAttention } from './flows/general-attention.js';
 import type { BotContext, BotFlowResult } from './types.js';
 
@@ -10,12 +9,6 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
   const ctx = await buildContext(phone, body);
 
   await persistInboundMessage(ctx, body);
-
-  if (!ctx.acceptedPrivacy) {
-    const result = await handlePrivacyFlow(ctx);
-    await persistOutboundIfResponded(ctx, result);
-    return result;
-  }
 
   // Conversación en handoff — el equipo humano ya tomó el caso
   if (ctx.conversationStatus === 'handoff') {
@@ -27,23 +20,6 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
     return result;
   }
 
-  // Primer mensaje tras aceptar privacidad — capturar nombre
-  if (!ctx.contactName && ctx.contactId) {
-    const raw = ctx.messageBody.trim();
-    const name = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    await supabase
-      .from('contacts')
-      .update({ name })
-      .eq('id', ctx.contactId);
-    const result: BotFlowResult = {
-      action: 'responded',
-      message: `Mucho gusto, ${name}. ¿En qué te puedo ayudar? 😊`,
-    };
-    await persistOutboundIfResponded({ ...ctx, contactName: name }, result);
-    return result;
-  }
-
-  // handleGeneralAttention ya incluye el cierre de handoff (cuando aplique)
   const result = await handleGeneralAttention(ctx);
   await persistOutboundIfResponded(ctx, result);
   return result;
@@ -65,7 +41,8 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
         phone,
         source: 'whatsapp_inbound',
         status: 'prospect',
-        accepted_privacy: false,
+        accepted_privacy: true,
+        accepted_at: new Date().toISOString(),
       })
       .select('id')
       .single();
@@ -80,40 +57,17 @@ async function buildContext(phone: string, body: string): Promise<BotContext> {
       contactId: newContact?.id,
       conversationId: conv?.id,
       conversationStatus: conv?.status,
-      acceptedPrivacy: false,
     };
   }
 
   const conv = await ensureConversation(contact.id);
-  const conversationId = conv?.id;
-  const conversationStatus = conv?.status;
-
-  // privacySentAt solo se setea si hay mensajes previos en la conversación,
-  // lo que confirma que el aviso ya fue enviado realmente.
-  let privacySentAt: Date | undefined;
-  if (conversationId) {
-    const { count } = await supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('conversation_id', conversationId);
-    if (count && count > 0) {
-      const { data: conversation } = await supabase
-        .from('conversations')
-        .select('started_at')
-        .eq('id', conversationId)
-        .maybeSingle();
-      privacySentAt = conversation ? new Date(conversation.started_at) : undefined;
-    }
-  }
 
   return {
     phone,
     messageBody: body,
     contactId: contact.id,
-    conversationId,
-    conversationStatus,
-    acceptedPrivacy: contact.accepted_privacy,
-    privacySentAt,
+    conversationId: conv?.id,
+    conversationStatus: conv?.status,
     contactName: contact.name ?? undefined,
   };
 }

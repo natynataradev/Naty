@@ -23,7 +23,33 @@
       "PowerShell(git log*)",
       "PowerShell(git diff*)",
       "PowerShell(git add*)",
-      "PowerShell(git commit*)"
+      "PowerShell(git commit*)",
+      "PowerShell(Start-Sleep -Seconds 3; $response = Invoke-WebRequest -Uri \"http://localhost:3000/health\" -ErrorAction SilentlyContinue; if \\($response\\) { $response.Content } else { \"Server not responding yet\" })",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:3000/health\" 2>$null)",
+      "PowerShell(Stop-Process -Id 17564 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(\"Proceso detenido\")",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(\"Todos los procesos Node detenidos\")",
+      "Read(//tmp/**)",
+      "Read(//c/tmp/**)",
+      "Bash(curl -X POST http://localhost:3000/webhook/twilio -H 'Content-Type: application/x-www-form-urlencoded' -d 'From=whatsapp%2B1234567890&To=whatsapp%3A%2B14155238886&Body=Hola+Naty&MessageSid=SM1234567890')",
+      "Bash(curl -X POST http://localhost:3000/webhook/twilio -H 'Content-Type: application/x-www-form-urlencoded' -d 'From=%2B1234567890&To=whatsapp%3A%2B14155238886&Body=Hola+Naty&MessageSid=SM1234567890')",
+      "Bash(pkill -f \"tsx watch\")",
+      "Bash(pnpm dev *)",
+      "PowerShell(\"Procesos detenidos\")",
+      "Bash(railway login *)",
+      "Bash(railway deploy *)",
+      "Bash(curl -s https://naty-api-production.up.railway.app/health)",
+      "Bash(railway variables *)",
+      "Read(//c/Users/giorg/.claude/projects/c--Users-giorg-Documents-Naty2-0/memory/**)",
+      "PowerShell(try { $dash = Invoke-WebRequest -Uri \"http://localhost:3001\" -UseBasicParsing -TimeoutSec 5; Write-Host \"Status: $\\($dash.StatusCode\\)\" } catch { Write-Host \"Error: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(cd \"c:\\\\Users\\\\giorg\\\\Documents\\\\Naty2.0\\\\apps\\\\dashboard\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"middleware.ts\" } | Select-Object -First 20)",
+      "Bash(git add *)",
+      "Bash(grep -i \"^nul$\")",
+      "Bash(git rm *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\giorg\\.claude\\projects\\c--Users-giorg-Documents-Naty2-0\\memory"
     ]
   },
   "hooks": {
@@ -33,8 +59,8 @@
           {
             "type": "command",
             "command": "node lib/request-permission.js",
-            "timeout": 14400,
-            "shell": "powershell"
+            "shell": "powershell",
+            "timeout": 14400
           }
         ]
       }

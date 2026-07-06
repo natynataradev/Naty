@@ -7,6 +7,7 @@ import {
   deleteContact,
   getContactWithHistory,
   exportContacts,
+  bulkUpsertContacts,
 } from './contact-repository.js';
 import type { ContactFilters } from '@naty/shared';
 
@@ -16,6 +17,7 @@ function parseFilters(query: Record<string, unknown>): ContactFilters {
   return {
     status: query['status'] as ContactFilters['status'],
     source: query['source'] as ContactFilters['source'],
+    type: query['type'] as ContactFilters['type'],
     from: query['from'] as string | undefined,
     to: query['to'] as string | undefined,
     search: query['search'] as string | undefined,
@@ -101,6 +103,34 @@ contactsRouter.delete('/:id', async (req: Request, res: Response) => {
   try {
     await deleteContact(req.params['id'] as string);
     res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+contactsRouter.post('/import', async (req: Request, res: Response) => {
+  try {
+    const { contacts } = req.body as { contacts?: any[] };
+    if (!contacts || !Array.isArray(contacts)) {
+      res.status(400).json({ error: 'El cuerpo de la petición debe contener un array "contacts".' });
+      return;
+    }
+
+    if (contacts.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    // Validate telephone numbers are provided
+    for (const c of contacts) {
+      if (!c.phone) {
+        res.status(400).json({ error: 'Todos los contactos deben incluir un número de teléfono.' });
+        return;
+      }
+    }
+
+    const result = await bulkUpsertContacts(contacts);
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

@@ -9,10 +9,3 @@ export interface User {
   active: boolean;
   created_at: string;
 }
-
-export interface CreateUserInput {
-  school_id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-}

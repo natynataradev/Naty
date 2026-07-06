@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000';
+import { createClient } from '@/lib/supabase/client';
 
 export function CreateUserForm() {
   const router = useRouter();
@@ -21,9 +20,17 @@ export function CreateUserForm() {
     setError('');
 
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000';
       const res = await fetch(`${API_URL}/users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(form),
       });
 
@@ -45,45 +52,45 @@ export function CreateUserForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-sm text-gray-300">Nombre</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">Nombre</label>
           <input
             type="text"
             required
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-naty-blue"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-naty-green/50 focus:bg-white/10 transition-all duration-200"
             placeholder="Nombre completo"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm text-gray-300">Correo electrónico</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">Correo electrónico</label>
           <input
             type="email"
             required
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-naty-blue"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-naty-green/50 focus:bg-white/10 transition-all duration-200"
             placeholder="correo@natara.mx"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm text-gray-300">Contraseña inicial</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">Contraseña inicial</label>
           <input
             type="password"
             required
             minLength={8}
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-naty-blue"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-naty-green/50 focus:bg-white/10 transition-all duration-200"
             placeholder="Mínimo 8 caracteres"
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm text-gray-300">Rol</label>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-400">Rol</label>
           <select
             value={form.role}
             onChange={(e) => update('role', e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-[#1A1A2E] px-4 py-2.5 text-sm text-white outline-none focus:border-naty-blue"
+            className="w-full rounded-2xl border border-white/10 bg-[#131322] px-4 py-2.5 text-xs text-white outline-none focus:border-naty-green/50 transition-all duration-200"
           >
             <option value="operator">Operador</option>
             <option value="admin">Administrador</option>
@@ -92,15 +99,15 @@ export function CreateUserForm() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-400">{error}</p>
+        <p className="rounded-xl bg-red-500/10 px-4 py-2.5 text-xs text-red-400 font-semibold border border-red-500/15">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-naty-green px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        className="rounded-xl bg-naty-green hover:scale-[1.02] active:scale-[0.98] px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all shadow-md shadow-naty-green/20 disabled:opacity-50 disabled:scale-100"
       >
-        {loading ? 'Creando…' : 'Crear usuario'}
+        {loading ? 'Creando...' : 'Crear usuario'}
       </button>
     </form>
   );

@@ -1,6 +1,7 @@
 import { supabase } from '../../db/client.js';
 import { llm } from '../llm.js';
 import { NATY_SYSTEM_PROMPT } from '../system-prompt.js';
+import { buildCalendarContext } from '../calendar-context.js';
 import type { BotContext, BotFlowResult } from '../types.js';
 import type { ChatTurn } from '../llm.js';
 import { finalizeHandoff } from './handoff.js';
@@ -20,12 +21,16 @@ export interface GeneralAttentionResult {
  * handoff (que agrega la invitación a Sol/Karla y cierra la conversación).
  */
 export async function handleGeneralAttention(ctx: BotContext): Promise<BotFlowResult> {
-  const history = await loadHistory(ctx.conversationId);
+  const [history, calendarCtx] = await Promise.all([
+    loadHistory(ctx.conversationId),
+    buildCalendarContext(90),
+  ]);
 
   const nameNote = ctx.contactName
-    ? `El nombre de la persona con quien hablas es: ${ctx.contactName}. Úsalo ocasionalmente.`
+    ? `\n\nIMPORTANTE: El nombre de la persona con quien hablas es: ${ctx.contactName}. Úsalo ocasionalmente.`
     : '';
-  const systemPrompt = `${NATY_SYSTEM_PROMPT}\n\nIMPORTANTE: El usuario ya aceptó el aviso de privacidad. NO vuelvas a pedirlo ni lo menciones. ${nameNote}`.trim();
+  const calendarNote = calendarCtx ? `\n\n${calendarCtx}` : '';
+  const systemPrompt = `${NATY_SYSTEM_PROMPT}${nameNote}${calendarNote}`;
 
   let reply: string;
   try {

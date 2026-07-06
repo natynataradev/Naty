@@ -1,12 +1,17 @@
-import { Router, type Request, type Response, type Router as RouterType } from 'express';
+import { Router, type Response, type Router as RouterType } from 'express';
 import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
+import { requireAdminRole, type AuthenticatedRequest } from '../middleware/auth.js';
 
 export const usersRouter: RouterType = Router();
 
 const SCHOOL_ID = env.DEFAULT_SCHOOL_ID;
 
-usersRouter.get('/', async (_req: Request, res: Response) => {
+usersRouter.get('/me', (req: AuthenticatedRequest, res: Response) => {
+  res.json(req.user);
+});
+
+usersRouter.get('/', async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('users')
@@ -21,7 +26,7 @@ usersRouter.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-usersRouter.post('/', async (req: Request, res: Response) => {
+usersRouter.post('/', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { email, name, role, password } = req.body as {
       email?: string;
@@ -64,7 +69,7 @@ usersRouter.post('/', async (req: Request, res: Response) => {
   }
 });
 
-usersRouter.patch('/:id', async (req: Request, res: Response) => {
+usersRouter.patch('/:id', requireAdminRole, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { active, name, role } = req.body as {
       active?: boolean;

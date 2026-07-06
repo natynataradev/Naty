@@ -13,11 +13,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
     "@google/genai": "^2.7.0",
-    "@google/generative-ai": "^0.24.1",
     "@naty/shared": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",
-    "express": "^4.21.2",
-    "twilio": "^6.0.2"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

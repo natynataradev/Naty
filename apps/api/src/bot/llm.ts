@@ -16,16 +16,6 @@ TU ÚNICO ROL ES DAR INFORMACIÓN. Nada más. No agendas, no confirmas disponibi
 
 ---
 
-PRIMER CONTACTO - AVISO DE PRIVACIDAD
-
-Si es primera vez que escriben, ANTES que cualquier cosa:
-
-"Antes de poder ayudarte, necesito que respondas con la palabra ACEPTO nuestro aviso de privacidad y protección de datos personales que encontrarás en ${env.PRIVACY_POLICY_URL}"
-
-Solo después de ACEPTO, continúa.
-
----
-
 QUÉ SÍ PUEDO DAR (información):
 
 • Categorías: Bebés (6 meses-3 años), Niños (4+), Adolescentes/Adultos (13+)
@@ -117,6 +107,8 @@ Nado libre sábados: 10:00 am-2:00 pm (flexible)
 
 RECUERDA: Tu trabajo es entregar datos, nada más. Si suena como si estuvieras resolviendo un problema o tomando una decisión, estás fuera de rol. Escala a Sol o Karla.`.replace('[LINK_AVISO]', env.PRIVACY_POLICY_URL);
 
+import { GoogleGenAI } from '@google/genai';
+
 class HaikuProvider implements LLMProvider {
   private _client: Anthropic | null = null;
 
@@ -145,13 +137,107 @@ class HaikuProvider implements LLMProvider {
   }
 }
 
+class GeminiProvider implements LLMProvider {
+  private _client: GoogleGenAI | null = null;
+
+  private get client(): GoogleGenAI {
+    if (!this._client) {
+      this._client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+    }
+    return this._client;
+  }
+
+  async complete(systemPrompt: string, history: ChatTurn[], userMessage: string): Promise<string> {
+    if (!env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY no configurado');
+    }
+
+    const contents = history.map(turn => ({
+      role: turn.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: turn.content }],
+    }));
+
+    if (userMessage) {
+      contents.push({
+        role: 'user',
+        parts: [{ text: userMessage }],
+      });
+    }
+
+    const response = await this.client.models.generateContent({
+      model: env.GEMINI_MODEL,
+      contents,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 1.0,
+      },
+    });
+
+    return response.text ?? '';
+  }
+}
+
+function getPrimaryProvider(): LLMProvider {
+  if (env.LLM_PROVIDER === 'anthropic') {
+    if (env.ANTHROPIC_API_KEY) return new HaikuProvider();
+    if (env.GEMINI_API_KEY) {
+      console.warn('[llm] LLM_PROVIDER es anthropic pero ANTHROPIC_API_KEY está vacía. Usando Gemini de respaldo.');
+      return new GeminiProvider();
+    }
+  } else {
+    if (env.GEMINI_API_KEY) return new GeminiProvider();
+    if (env.ANTHROPIC_API_KEY) {
+      console.warn('[llm] LLM_PROVIDER es gemini pero GEMINI_API_KEY está vacía. Usando Anthropic de respaldo.');
+      return new HaikuProvider();
+    }
+  }
+  throw new Error('No se pudo inicializar ningún proveedor de LLM. Revisa las claves de API.');
+}
+
+class FallbackLLMProvider implements LLMProvider {
+  async complete(systemPrompt: string, history: ChatTurn[], userMessage: string): Promise<string> {
+    const primary = getPrimaryProvider();
+    try {
+      return await primary.complete(systemPrompt, history, userMessage);
+    } catch (err) {
+      console.error(`[llm] Proveedor primario falló: ${(err as Error).message}. Activando fallback alternativo...`);
+      
+      let secondary: LLMProvider;
+      if (primary instanceof GeminiProvider) {
+        if (env.ANTHROPIC_API_KEY) {
+          secondary = new HaikuProvider();
+        } else {
+          throw err;
+        }
+      } else {
+        if (env.GEMINI_API_KEY) {
+          secondary = new GeminiProvider();
+        } else {
+          throw err;
+        }
+      }
+
+      console.log(`[llm] Usando fallback alternativo: ${secondary.constructor.name}`);
+      return await secondary.complete(systemPrompt, history, userMessage);
+    }
+  }
+}
+
 // En modo test, permite inyectar un LLM mock desde globalThis.
 const mocked = (globalThis as any).__NatyMockLlm as LLMProvider | undefined;
-export const llm: LLMProvider = mocked ?? new HaikuProvider();
+export const llm: LLMProvider = mocked ?? new FallbackLLMProvider();
 
 export async function sendToLLM(conversationHistory: ChatTurn[]): Promise<string | null> {
   try {
-    const response = await llm.complete(NATY_SYSTEM_PROMPT, conversationHistory, '');
+    const history = [...conversationHistory];
+    const lastTurn = history.pop();
+    if (!lastTurn) return null;
+
+    const response = await llm.complete(
+      NATY_SYSTEM_PROMPT,
+      history,
+      lastTurn.content
+    );
     return response;
   } catch (error) {
     console.error('Error calling LLM:', error);

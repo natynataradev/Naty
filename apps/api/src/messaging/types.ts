@@ -9,6 +9,9 @@ export interface IncomingMessage {
 export interface OutgoingMessage {
   to: string;
   body: string;
+  mediaUrl?: string;
+  templateName?: string;
+  templateParams?: string[];
 }
 
 export interface MessagingProvider {

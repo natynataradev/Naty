@@ -1,16 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+// En modo test, permite inyectar un cliente mock desde globalThis.
+const mocked = (globalThis as any).__NatyMockSupabase as SupabaseClient | undefined;
 
-export async function verifyConnection(): Promise<void> {
-  const { error } = await supabase.from('contacts').select('id').limit(1);
-  if (error && error.code !== 'PGRST116') {
-    throw new Error(`Supabase connection failed: ${error.message}`);
-  }
-}
+export const supabase: SupabaseClient =
+  mocked ??
+  createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+

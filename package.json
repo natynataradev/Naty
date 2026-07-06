@@ -2,6 +2,7 @@
   "name": "naty",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@11.5.1",
   "description": "Naty — Sistema WhatsApp para Natara La Cima",
   "scripts": {
     "dev": "turbo dev",
