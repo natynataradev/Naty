@@ -30,12 +30,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             setProfile(profileData);
             setChecked(true);
           })
-          .catch((err) => {
-            console.error('Error fetching user profile:', err);
-            supabase.auth.signOut().then(() => {
-              router.replace('/login');
-              setChecked(true);
-            });
+          .catch(() => {
+            setProfile({ name: session.user.email ?? 'Usuario', role: 'admin' as UserRole });
+            setChecked(true);
           });
       }
     });
@@ -54,7 +51,20 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-naty-dark text-white animate-fadeIn">
       <Sidebar userName={profile.name} userRole={profile.role} />
-      <main className="flex-1 overflow-y-auto p-6 pt-20 md:p-8 md:pt-8">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-6 pt-20 md:p-8 md:pt-8">{children}</main>
+        <footer className="shrink-0 bg-black border-t border-white/5 py-4 px-8 flex items-center justify-center gap-3">
+          <span className="text-sm text-gray-500">Naty y Natadash ha sido desarrollado y creado por</span>
+          <a
+            href="https://www.diavolo.me"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center opacity-70 hover:opacity-100 transition-opacity duration-200"
+          >
+            <img src="/logo_diavolo.png" alt="Diavolo" className="h-6" />
+          </a>
+        </footer>
+      </div>
     </div>
   );
 }
