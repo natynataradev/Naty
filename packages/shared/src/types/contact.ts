@@ -1,6 +1,7 @@
 export type ContactStatus = 'prospect' | 'active' | 'inactive';
 export type ContactSource = 'whatsapp_inbound' | 'manual' | 'import';
 export type ContactType = 'lead' | 'student' | 'staff';
+export type PaymentStatus = 'current' | 'pending' | 'overdue';
 
 export interface Contact {
   id: string;
@@ -19,8 +20,13 @@ export interface Contact {
   address: string | null;
   blood_type: string | null;
   notes: string | null;
+  member_code: string | null;
   created_at: string;
   updated_at: string;
+  // Computed fields (returned by detail endpoint)
+  payment_status?: PaymentStatus;
+  last_attendance?: string | null;
+  last_payment_month?: string | null;
 }
 
 export interface CreateContactInput {
@@ -39,6 +45,7 @@ export interface CreateContactInput {
   address?: string;
   blood_type?: string;
   notes?: string;
+  member_code?: string;
 }
 
 export interface UpdateContactInput {
@@ -54,6 +61,7 @@ export interface UpdateContactInput {
   address?: string;
   blood_type?: string;
   notes?: string;
+  member_code?: string;
 }
 
 export interface ContactFilters {

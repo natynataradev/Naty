@@ -77,7 +77,6 @@ async function ContactsTable({ searchParams }: { searchParams: Record<string, st
               <th className="px-6 py-4">Nombre / Teléfono</th>
               <th className="px-6 py-4">Tipo</th>
               <th className="px-6 py-4">Estado</th>
-              <th className="px-6 py-4">Fuente</th>
               <th className="px-6 py-4">Fecha</th>
               <th className="px-6 py-4 text-right">Acciones</th>
             </tr>
@@ -121,9 +120,6 @@ async function ContactsTable({ searchParams }: { searchParams: Record<string, st
                       variant={STATUS_VARIANTS[contact.status] ?? 'gray'}
                       showDot={contact.status === 'active'}
                     />
-                  </td>
-                  <td className="px-6 py-4 text-gray-400 text-xs font-medium">
-                    {SOURCE_LABELS[contact.source] ?? contact.source}
                   </td>
                   <td className="px-6 py-4 text-gray-500 text-xs font-medium">
                     {new Date(contact.created_at).toLocaleDateString('es-MX', {

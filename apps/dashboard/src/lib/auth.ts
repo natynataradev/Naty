@@ -12,20 +12,20 @@ export interface SessionUser {
 export async function getSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient();
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
   const { data: profile } = await supabase
     .from('users')
     .select('name, role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .maybeSingle();
 
   if (!profile) return null;
 
   return {
-    id: session.user.id,
-    email: session.user.email ?? '',
+    id: user.id,
+    email: user.email ?? '',
     name: profile.name,
     role: profile.role as UserRole,
   };

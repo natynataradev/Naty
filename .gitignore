@@ -6,6 +6,7 @@ node_modules/
 dist/
 .next/
 out/
+dist-windows/
 
 # Environment files (keep .env.example)
 .env
@@ -24,6 +25,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Windows distribution — node binary cache
+scripts/.node-cache/
+
 # Logs
 *.log
 npm-debug.log*
@@ -34,3 +38,5 @@ sdd/
 lib/notify.js
 lib/wait-approval.js
 lib/request-permission.js
+
+.vercel

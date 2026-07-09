@@ -7,7 +7,8 @@ import { ChevronRight, ChevronLeft, Send, Calendar, Upload, Image, Loader2, X, F
 
 interface Segment {
   status: string[];
-  source: string[];
+  contact_type: string[];
+  payment_status: string[];
 }
 
 interface Template {
@@ -40,7 +41,7 @@ export function NewCampaignForm({ userId }: { userId: string }) {
   const [useTemplate, setUseTemplate] = useState<'template' | 'custom'>('template');
   const [form, setForm] = useState<FormState>({
     name: '',
-    segment: { status: [], source: [] },
+    segment: { status: [], contact_type: [], payment_status: [] },
     messageBody: '',
     selectedTemplateId: '',
     scheduledAt: '',
@@ -135,7 +136,7 @@ export function NewCampaignForm({ userId }: { userId: string }) {
     }
   }
 
-  function toggleSegmentFilter(field: 'status' | 'source', value: string) {
+  function toggleSegmentFilter(field: 'status' | 'contact_type' | 'payment_status', value: string) {
     setForm((prev) => {
       const current = prev.segment[field];
       const updated = current.includes(value)
@@ -171,7 +172,8 @@ export function NewCampaignForm({ userId }: { userId: string }) {
           template_id: form.selectedTemplateId || form.messageBody,
           segment: {
             status: form.segment.status.length ? form.segment.status : undefined,
-            source: form.segment.source.length ? form.segment.source : undefined,
+            contact_type: form.segment.contact_type.length ? form.segment.contact_type : undefined,
+            payment_status: form.segment.payment_status.length ? form.segment.payment_status : undefined,
             media_url: form.mediaUrl.trim() ? form.mediaUrl.trim() : undefined,
           },
           created_by: actualUserId,
@@ -276,19 +278,18 @@ export function NewCampaignForm({ userId }: { userId: string }) {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Fuente del contacto</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Segmentos</p>
               <div className="flex flex-wrap gap-2">
                 {[
-                  ['whatsapp_inbound', 'WhatsApp'],
-                  ['manual', 'Manual'],
-                  ['import', 'Importación'],
+                  ['student', 'Alumnos'],
+                  ['staff', 'Maestros/Administrativos'],
                 ].map(([val, label]) => {
-                  const isSelected = form.segment.source.includes(val);
+                  const isSelected = form.segment.contact_type.includes(val);
                   return (
                     <button
                       key={val}
                       type="button"
-                      onClick={() => toggleSegmentFilter('source', val)}
+                      onClick={() => toggleSegmentFilter('contact_type', val)}
                       className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition active:scale-95 duration-200 ${
                         isSelected
                           ? 'border-naty-blue bg-naty-blue/10 text-naty-blue shadow-inner'
@@ -300,6 +301,35 @@ export function NewCampaignForm({ userId }: { userId: string }) {
                   );
                 })}
               </div>
+              <p className="mt-1.5 text-[10px] text-gray-500 font-medium">Selecciona a quién va dirigida la campaña</p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Estatus de pago</p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ['current', 'Al corriente', 'border-naty-green bg-naty-green/10 text-naty-green'],
+                    ['pending', 'Pendiente', 'border-yellow-400 bg-yellow-400/10 text-yellow-400'],
+                    ['overdue', 'Atrasado', 'border-red-400 bg-red-400/10 text-red-400'],
+                  ] as [string, string, string][]
+                ).map(([val, label, selectedCls]) => {
+                  const isSelected = form.segment.payment_status.includes(val);
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => toggleSegmentFilter('payment_status', val)}
+                      className={`rounded-xl border px-3.5 py-2 text-xs font-semibold transition active:scale-95 duration-200 ${
+                        isSelected ? selectedCls : 'border-white/10 text-gray-400 hover:border-white/20 bg-white/5'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[10px] text-gray-500 font-medium">Sin selección = todos los estados de pago</p>
             </div>
           </div>
         )}
@@ -510,8 +540,11 @@ export function NewCampaignForm({ userId }: { userId: string }) {
               <p className="text-gray-400">
                 Segmento:{' '}
                 <span className="text-white font-semibold">
-                  {form.segment.status.length ? form.segment.status.map(s => s.toUpperCase()).join(', ') : 'TODOS'} ·{' '}
-                  {form.segment.source.length ? form.segment.source.map(s => s.toUpperCase()).join(', ') : 'TODAS LAS FUENTES'}
+                  {form.segment.status.length ? form.segment.status.map(s => s.toUpperCase()).join(', ') : 'TODOS LOS ESTADOS'} ·{' '}
+                  {form.segment.contact_type.length
+                    ? form.segment.contact_type.map(t => t === 'student' ? 'Alumnos' : 'Maestros/Adm.').join(', ')
+                    : 'Todos los segmentos'}
+                  {form.segment.payment_status.length ? ` · PAGO: ${form.segment.payment_status.join(', ')}` : ''}
                 </span>
               </p>
               {form.mediaUrl.trim() && (

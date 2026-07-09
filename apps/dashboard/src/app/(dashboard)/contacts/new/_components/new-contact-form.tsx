@@ -22,6 +22,7 @@ interface FormState {
   address: string;
   blood_type: string;
   notes: string;
+  member_code: string;
   accepted_privacy: boolean;
 }
 
@@ -42,6 +43,7 @@ export function NewContactForm() {
     address: '',
     blood_type: '',
     notes: '',
+    member_code: '',
     accepted_privacy: false,
   });
 
@@ -77,6 +79,7 @@ export function NewContactForm() {
       if (form.address.trim()) body['address'] = form.address.trim();
       if (form.blood_type) body['blood_type'] = form.blood_type;
       if (form.notes.trim()) body['notes'] = form.notes.trim();
+      if (form.member_code.trim()) body['member_code'] = form.member_code.trim();
 
       const res = await fetch(`${API_URL}/contacts`, {
         method: 'POST',
@@ -147,13 +150,17 @@ export function NewContactForm() {
             />
           </div>
           <div>
-            <label className={labelClass}>Teléfono *</label>
+            <label className={labelClass}>Teléfono * <span className="font-normal text-gray-500">(10 dígitos, sin espacios ni guiones)</span></label>
             <input
               required
               type="tel"
+              inputMode="numeric"
               placeholder="Ej. 3312345678"
+              maxLength={10}
+              pattern="[0-9]{10}"
+              title="Ingresa exactamente 10 dígitos"
               value={form.phone}
-              onChange={(e) => set('phone', e.target.value)}
+              onChange={(e) => set('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
               className={inputClass}
             />
           </div>
@@ -189,6 +196,17 @@ export function NewContactForm() {
               ))}
             </select>
           </div>
+          <div>
+            <label className={labelClass}>Código Natara</label>
+            <input
+              type="text"
+              placeholder="Ej. NAT-001"
+              value={form.member_code}
+              onChange={(e) => set('member_code', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
           <div className="sm:col-span-2">
             <label className={labelClass}>Dirección</label>
             <input

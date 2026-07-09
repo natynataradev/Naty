@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Phone, Mail, Award, Calendar } from 'lucide-react';
+import { ChevronLeft, Phone, Mail, Calendar, Hash, Heart, AlertCircle, User, FileText, GraduationCap, CreditCard, CalendarCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/badge';
 import { PageHeader } from '@/components/page-header';
@@ -100,6 +100,24 @@ export default async function ContactDetailPage({ params }: PageProps) {
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Información del Perfil</h3>
 
             <div className="space-y-3.5 text-xs">
+              {contact.member_code && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 flex items-center gap-1.5">
+                    <Hash size={12} className="text-gray-500" /> Código Natara
+                  </span>
+                  <span className="text-naty-green font-bold font-mono tracking-widest">{contact.member_code}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 flex items-center gap-1.5">
+                  <GraduationCap size={12} className="text-gray-500" /> Tipo
+                </span>
+                <span className="text-white font-semibold">
+                  {contact.type === 'student' ? 'Alumno' : contact.type === 'staff' ? 'Maestro / Adm.' : contact.type}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center gap-1.5">
                   <Phone size={12} className="text-gray-500" /> Teléfono
@@ -118,28 +136,88 @@ export default async function ContactDetailPage({ params }: PageProps) {
 
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center gap-1.5">
-                  <Award size={12} className="text-gray-500" /> Origen
+                  <Calendar size={12} className="text-gray-500" /> Nacimiento
                 </span>
-                <span className="text-white font-semibold">
-                  {contact.source === 'whatsapp_inbound' ? 'WhatsApp' : contact.source}
+                <span className="text-white">
+                  {contact.birth_date ? safeLocaleDateString(contact.birth_date) : '—'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 flex items-center gap-1.5">
-                  <Calendar size={12} className="text-gray-500" /> Registro
+                  <Heart size={12} className="text-gray-500" /> Tipo de sangre
                 </span>
-                <span className="text-white">
-                  {safeLocaleDateString(contact.created_at)}
+                <span className="text-white font-bold font-mono">{contact.blood_type ?? '—'}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 flex items-center gap-1.5">
+                  <AlertCircle size={12} className="text-gray-500" /> Tel. emergencia
+                </span>
+                <span className="text-white font-mono">{contact.emergency_phone ?? '—'}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 flex items-center gap-1.5">
+                  <User size={12} className="text-gray-500" /> Responsable
+                </span>
+                <span className="text-white truncate max-w-[140px]" title={contact.guardian_name ?? '—'}>
+                  {contact.guardian_name ?? '—'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between border-t border-white/5 pt-3.5">
-                <span className="text-gray-400">Privacidad</span>
-                <Badge
-                  label={contact.accepted_privacy ? 'Aceptado' : 'Pendiente'}
-                  variant={contact.accepted_privacy ? 'green' : 'gray'}
-                />
+              <div className="border-t border-white/5 pt-3.5 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 flex items-center gap-1.5">
+                    <CreditCard size={12} className="text-gray-500" /> Pago
+                  </span>
+                  {contact.payment_status === 'current' && (
+                    <span className="rounded-full bg-naty-green/15 border border-naty-green/30 px-2.5 py-0.5 text-[10px] font-bold text-naty-green">Al corriente</span>
+                  )}
+                  {contact.payment_status === 'pending' && (
+                    <span className="rounded-full bg-yellow-400/10 border border-yellow-400/25 px-2.5 py-0.5 text-[10px] font-bold text-yellow-400">Pendiente</span>
+                  )}
+                  {(contact.payment_status === 'overdue' || !contact.payment_status) && (
+                    <span className="rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-0.5 text-[10px] font-bold text-red-400">Atrasado</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 flex items-center gap-1.5">
+                    <CalendarCheck size={12} className="text-gray-500" /> Última visita
+                  </span>
+                  <span className="text-white">
+                    {contact.last_attendance
+                      ? safeLocaleDateString(contact.last_attendance)
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+
+              {contact.notes && (
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-gray-400 flex items-center gap-1.5 shrink-0 mt-0.5">
+                    <FileText size={12} className="text-gray-500" /> Notas
+                  </span>
+                  <span className="text-white text-right leading-snug">{contact.notes}</span>
+                </div>
+              )}
+
+              <div className="border-t border-white/5 pt-3.5 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 flex items-center gap-1.5">
+                    <Calendar size={12} className="text-gray-500" /> Registro
+                  </span>
+                  <span className="text-white">{safeLocaleDateString(contact.created_at)}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Privacidad</span>
+                  <Badge
+                    label={contact.accepted_privacy ? 'Aceptado' : 'Pendiente'}
+                    variant={contact.accepted_privacy ? 'green' : 'gray'}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -215,7 +293,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
 
         {/* Columna 3: Acciones Rápidas (3/12) */}
         <div className="lg:col-span-3">
-          <QuickActions contact={contact} activeConversation={activeConversation} />
+          <QuickActions contact={contact} />
         </div>
       </div>
     </div>

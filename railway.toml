@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install -g pnpm && pnpm install --frozen-lockfile && pnpm --filter @naty/shared build && pnpm --filter @naty/api build && pnpm --filter @naty/dashboard build"
+buildCommand = "npm install -g pnpm && NODE_ENV=development pnpm install --frozen-lockfile && pnpm --filter @naty/shared build && pnpm --filter @naty/api build"
 
 [deploy]
 startCommand = "node apps/api/dist/index.js"

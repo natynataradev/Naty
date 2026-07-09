@@ -151,9 +151,11 @@ export default async function CampaignDetailPage({ params }: PageProps) {
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">Fuentes del segmento</dt>
+            <dt className="text-gray-500">Segmento</dt>
             <dd className="mt-1 text-white">
-              {(campaign.segment.source as string[] | undefined)?.join(', ') ?? 'Todas'}
+              {(campaign.segment.contact_type as string[] | undefined)
+                ?.map(t => t === 'student' ? 'Alumnos' : t === 'staff' ? 'Maestros/Adm.' : t)
+                .join(', ') ?? 'Todos'}
             </dd>
           </div>
           {campaign.scheduled_at && (

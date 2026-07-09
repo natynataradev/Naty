@@ -18,10 +18,11 @@ export interface Campaign {
 
 export interface CampaignSegment {
   status?: string[];
-  source?: string[];
+  contact_type?: string[];
   from?: string;
   to?: string;
   media_url?: string;
+  payment_status?: string[];
 }
 
 export interface CreateCampaignInput {
