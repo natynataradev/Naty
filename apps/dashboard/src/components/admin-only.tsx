@@ -17,7 +17,7 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
           setReady(true);
         }
       })
-      .catch(() => router.replace('/contacts'));
+      .catch(() => setReady(true));
   }, [router]);
 
   if (!ready) return null;
