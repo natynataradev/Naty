@@ -7,7 +7,7 @@ import type { ChatTurn } from '../llm.js';
 // Por eso el LLM genera la respuesta informativa, y al finalizamos el handoff
 // agregamos una invitación natural a Sol/Karla y a la dirección.
 const HANDOFF_INVITE =
-  ' Alguien del equipo Natara se pondrá en contacto contigo en breve 🙌 Mientras tanto, puedes conocernos más en Instagram @natara.la.cima, en Facebook como Natara Escuela de Natacion, o visitarnos en Av. La Cima #151, Zapopan. ¡Te esperamos!';
+  ' En un momento alguien del equipo Natara se pondrá en contacto contigo 🙌';
 
 export interface HandoffOutcome {
   finalMessage: string;
@@ -38,12 +38,17 @@ export async function finalizeHandoff(
 
   console.log(`[handoff] contacto ${ctx.phone} derivado a humano. Razón: ${reason}`);
 
-  // Limpiamos el token HANDOFF y cualquier oración sobre Sol/Karla que el LLM genere
-  // (el HANDOFF_INVITE ya los menciona — esta limpieza evita la duplicación)
+  // Limpiamos el token HANDOFF y cualquier oración sobre el equipo Natara que el LLM genere
+  // (el HANDOFF_INVITE ya lo dice — esta limpieza evita duplicación)
+  // También eliminamos preguntas finales: en handoff el mensaje debe ser definitivo
   const cleanReply = llmReply
     .replace(/HANDOFF/gi, '')
     .replace(/[^.!?]*\b(Sol|Karla|equipo\s+Natara|alguien\s+del\s+equipo)\b[^.!?]*[.!?]?/gi, '')
     .replace(/\s{2,}/g, ' ')
+    .trim()
+    .split('\n')
+    .filter((line) => !line.trim().endsWith('?'))
+    .join('\n')
     .trim();
 
   return {

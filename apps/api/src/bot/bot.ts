@@ -5,22 +5,38 @@ import type { BotContext, BotFlowResult } from './types.js';
 
 const DEFAULT_SCHOOL_ID = env.DEFAULT_SCHOOL_ID;
 
+const NAME_REQUEST =
+  '¡Hola! Soy Naty 😊 Antes de empezar, ¿me dices tu nombre? Solo lo usamos para darte una mejor atención y no lo compartiremos con nadie.';
+
 export async function processMessage(phone: string, body: string): Promise<BotFlowResult> {
-  const ctx = await buildContext(phone, body);
+  let ctx = await buildContext(phone, body);
 
   await persistInboundMessage(ctx, body);
 
-  // Conversación en handoff — el equipo humano ya tomó el caso
-  if (ctx.conversationStatus === 'handoff') {
-    const result: BotFlowResult = {
-      action: 'responded',
-      message: 'Tu mensaje fue recibido. Alguien del equipo Natara ya está al tanto y en breve se pone en contacto contigo 😊',
-    };
-    await persistOutboundIfResponded(ctx, result);
-    return result;
+  // Captura de nombre al inicio de la conversación
+  if (!ctx.contactName) {
+    const inboundCount = await countInboundMessages(ctx.conversationId);
+
+    if (inboundCount === 1) {
+      // Primer mensaje — pedir nombre antes de cualquier cosa
+      const result: BotFlowResult = { action: 'responded', message: NAME_REQUEST };
+      await persistOutboundIfResponded(ctx, result);
+      return result;
+    }
+
+    if (inboundCount === 2) {
+      // Segunda respuesta — guardar el nombre y continuar
+      const name = extractName(ctx.messageBody);
+      if (name && ctx.contactId) {
+        await supabase.from('contacts').update({ name }).eq('id', ctx.contactId);
+        ctx = { ...ctx, contactName: name };
+      }
+      // El LLM ve el historial y saluda con el nombre naturalmente
+    }
   }
 
-  const result = await handleGeneralAttention(ctx);
+  const isHandoff = ctx.conversationStatus === 'handoff';
+  const result = await handleGeneralAttention(ctx, isHandoff);
   await persistOutboundIfResponded(ctx, result);
   return result;
 }
@@ -124,4 +140,23 @@ async function ensureConversation(contactId: string): Promise<{ id: string; stat
     .single();
 
   return created ? { id: created.id, status: created.status } : undefined;
+}
+
+async function countInboundMessages(conversationId?: string): Promise<number> {
+  if (!conversationId) return 0;
+  const { count } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .eq('direction', 'inbound');
+  return count ?? 0;
+}
+
+function extractName(msg: string): string {
+  return msg
+    .trim()
+    .replace(/^(hola,?\s*)?(me llamo|soy|mi nombre es|me dicen|me puedes llamar|mi nombre)\s+/i, '')
+    .replace(/[.!?,]$/, '')
+    .trim()
+    .slice(0, 60);
 }

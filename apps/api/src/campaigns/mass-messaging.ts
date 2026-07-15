@@ -76,23 +76,6 @@ export async function sendCampaign(campaignId: string): Promise<void> {
   console.log(`[campaigns] "${campaign.name}" finalizada — enviados: ${sent}, fallidos: ${failed}`);
 }
 
-async function buildMessageBody(templateId: string, contactName: string | null): Promise<string> {
-  // Intentar cargar la plantilla por ID (UUID)
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId);
-  let body = templateId; // fallback: usar el texto directamente
-
-  if (isUuid) {
-    const template = await getTemplateById(templateId);
-    if (template) {
-      body = template.body;
-    }
-  }
-
-  // Reemplazar variables en el cuerpo
-  const nombre = contactName?.trim() || 'Estimado/a';
-  return body.replace(/\{\{nombre\}\}/gi, nombre);
-}
-
 async function recordCampaignMessage(
   campaignId: string,
   phone: string,

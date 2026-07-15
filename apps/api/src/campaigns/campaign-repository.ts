@@ -1,5 +1,6 @@
 import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
+import { computePaymentStatus } from '../billing/payment-status.js';
 import type { Campaign, CreateCampaignInput, CampaignSegment } from '@naty/shared';
 
 const SCHOOL_ID = env.DEFAULT_SCHOOL_ID;
@@ -60,13 +61,38 @@ export async function getSegmentContacts(segment: CampaignSegment): Promise<{ id
     .eq('accepted_privacy', true);
 
   if (segment.status?.length) query = query.in('status', segment.status);
-  if (segment.source?.length) query = query.in('source', segment.source);
+  if (segment.contact_type?.length) query = query.in('type', segment.contact_type);
   if (segment.from) query = query.gte('created_at', segment.from);
   if (segment.to) query = query.lte('created_at', segment.to);
 
   const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+
+  let contacts = data ?? [];
+
+  if (segment.payment_status?.length && contacts.length > 0) {
+    const ids = contacts.map((c) => c.id);
+
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('contact_id, period_month')
+      .eq('school_id', SCHOOL_ID)
+      .in('contact_id', ids)
+      .order('period_month', { ascending: false });
+
+    // latest payment month per contact
+    const lastPayment = new Map<string, string>();
+    for (const p of payments ?? []) {
+      if (!lastPayment.has(p.contact_id)) lastPayment.set(p.contact_id, p.period_month);
+    }
+
+    contacts = contacts.filter((c) => {
+      const status = computePaymentStatus(lastPayment.get(c.id) ?? null);
+      return segment.payment_status!.includes(status);
+    });
+  }
+
+  return contacts;
 }
 
 export async function getPendingScheduledCampaigns(): Promise<Campaign[]> {

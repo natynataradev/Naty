@@ -82,6 +82,15 @@ contactsRouter.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'phone y source son requeridos' });
       return;
     }
+    // Normalize manual contacts to full MX WhatsApp format (521 + 10 digits)
+    if (body['source'] === 'manual' && typeof body['phone'] === 'string') {
+      const digits = body['phone'].replace(/\D/g, '');
+      if (digits.length === 10) {
+        body['phone'] = `521${digits}`;
+      } else if (digits.length === 12 && digits.startsWith('52')) {
+        body['phone'] = `521${digits.slice(2)}`;
+      }
+    }
     const contact = await createContact(body as Parameters<typeof createContact>[0]);
     res.status(201).json(contact);
   } catch (err) {
@@ -102,7 +111,7 @@ contactsRouter.patch('/:id', async (req: Request, res: Response) => {
 contactsRouter.delete('/:id', async (req: Request, res: Response) => {
   try {
     await deleteContact(req.params['id'] as string);
-    res.status(204).send();
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

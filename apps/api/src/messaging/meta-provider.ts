@@ -7,7 +7,12 @@ export class MetaProvider implements MessagingProvider {
       throw new Error('Meta credentials no configurados');
     }
 
-    const phoneNumber = message.to.replace(/\D/g, '');
+    const digits = message.to.replace(/\D/g, '');
+    // Normalize to Mexico WhatsApp format: 521 + 10-digit local number
+    const phoneNumber =
+      digits.length === 10 ? `521${digits}` :
+      digits.length === 12 && digits.startsWith('52') ? `521${digits.slice(2)}` :
+      digits;
 
     const url = `https://graph.facebook.com/v25.0/${env.META_PHONE_NUMBER_ID}/messages`;
 
@@ -80,8 +85,7 @@ export class MetaProvider implements MessagingProvider {
       throw new Error(`Meta API error: ${JSON.stringify(error)}`);
     }
 
-    const result = await response.json();
-    console.log('Message sent successfully:', result);
+    await response.json();
   }
 
   parseIncoming(payload: any): IncomingMessage {
@@ -107,8 +111,4 @@ export class MetaProvider implements MessagingProvider {
     }
   }
 
-  validateSignature(signature: string, url: string, params: Record<string, string>): boolean {
-    // La validación de firma de Meta (X-Hub-Signature-256) se puede implementar en el webhook.
-    return true;
-  }
 }

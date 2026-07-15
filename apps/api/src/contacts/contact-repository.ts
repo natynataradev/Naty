@@ -1,5 +1,6 @@
 import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
+import { computePaymentStatus } from '../billing/payment-status.js';
 import type {
   Contact,
   ContactFilters,
@@ -84,7 +85,7 @@ export async function updateContact(id: string, input: UpdateContactInput): Prom
 export async function deleteContact(id: string): Promise<boolean> {
   const { error } = await supabase
     .from('contacts')
-    .update({ status: 'inactive' })
+    .delete()
     .eq('id', id)
     .eq('school_id', SCHOOL_ID);
 
@@ -96,12 +97,30 @@ export async function getContactWithHistory(id: string) {
   const contact = await getContactById(id);
   if (!contact) return null;
 
-  const { data: conversations } = await supabase
-    .from('conversations')
-    .select('id, started_at, last_message_at, status, handoff_at, handoff_reason')
-    .eq('contact_id', id)
-    .order('started_at', { ascending: false })
-    .limit(5);
+  const [{ data: conversations }, { data: lastPaymentRow }, { data: lastAttendanceRow }] = await Promise.all([
+    supabase
+      .from('conversations')
+      .select('id, started_at, last_message_at, status, handoff_at, handoff_reason')
+      .eq('contact_id', id)
+      .order('started_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('payments')
+      .select('period_month')
+      .eq('contact_id', id)
+      .eq('school_id', SCHOOL_ID)
+      .order('period_month', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('attendances')
+      .select('attended_at')
+      .eq('contact_id', id)
+      .eq('school_id', SCHOOL_ID)
+      .order('attended_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const conversationIds = (conversations ?? []).map((c) => c.id);
 
@@ -116,8 +135,17 @@ export async function getContactWithHistory(id: string) {
         ).data ?? []
       : [];
 
+  const lastPaymentMonth = lastPaymentRow?.period_month ?? null;
+
+  const enrichedContact = {
+    ...contact,
+    payment_status: computePaymentStatus(lastPaymentMonth),
+    last_payment_month: lastPaymentMonth,
+    last_attendance: lastAttendanceRow?.attended_at ?? null,
+  };
+
   return {
-    contact,
+    contact: enrichedContact,
     conversations: (conversations ?? []).map((c) => ({
       ...c,
       messages: messages.filter((m) => m.conversation_id === c.id),

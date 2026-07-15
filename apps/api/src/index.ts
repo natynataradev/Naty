@@ -7,6 +7,8 @@ import { usersRouter } from './users/users-router.js';
 import { messagesRouter } from './messaging/messages-router.js';
 import { templatesRouter } from './templates/templates-router.js';
 import { eventsRouter } from './events/events-router.js';
+import { paymentsRouter } from './payments/payments-router.js';
+import { attendancesRouter } from './attendances/attendances-router.js';
 import { requireAuth } from './middleware/auth.js';
 import { startScheduler } from './campaigns/scheduler.js';
 
@@ -38,6 +40,8 @@ app.use('/users', requireAuth, usersRouter);
 app.use('/messages', requireAuth, messagesRouter);
 app.use('/templates', requireAuth, templatesRouter);
 app.use('/events', requireAuth, eventsRouter);
+app.use('/payments', requireAuth, paymentsRouter);
+app.use('/attendances', requireAuth, attendancesRouter);
 
 app.listen(env.PORT, () => {
   console.log(`✓ Naty API running on port ${env.PORT} [${env.NODE_ENV}]`);

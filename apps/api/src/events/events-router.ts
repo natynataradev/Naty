@@ -24,7 +24,7 @@ eventsRouter.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'title, start_at, end_at y type son requeridos' });
       return;
     }
-    const userId = (req as any).userId as string;
+    const userId = (req as any).user?.id as string;
     const event = await createEvent(body as any, userId);
     res.status(201).json(event);
   } catch (err) {

@@ -12,7 +12,6 @@ metaRouter.get('/', (req: Request, res: Response) => {
 
   if (mode === 'subscribe' && token === env.META_WEBHOOK_VERIFY_TOKEN) {
     res.status(200).send(challenge);
-    console.log('[meta-webhook] verified by Meta');
     return;
   }
 
@@ -36,8 +35,6 @@ metaRouter.post('/', (req: Request, res: Response) => {
 });
 
 async function handleIncomingMessage(message: any): Promise<void> {
-  console.log(`[bot-meta] procesando mensaje de ${message.from}: "${message.body}"`);
-
   const result = await processMessage(message.from, message.body);
 
   if (result.action === 'responded') {

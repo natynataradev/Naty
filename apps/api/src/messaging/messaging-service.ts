@@ -15,10 +15,6 @@ export class MessagingService {
   parseIncoming(payload: Record<string, string>) {
     return this.provider.parseIncoming(payload);
   }
-
-  validateSignature(signature: string, url: string, params: Record<string, string>): boolean {
-    return this.provider.validateSignature(signature, url, params);
-  }
 }
 
 export const messagingService = new MessagingService();

@@ -5,21 +5,19 @@ import type { BotContext } from '../types.js';
 
 interface ProspectData {
   name: string | null;
-  interest: string | null;
 }
 
-const EXTRACTION_PROMPT = `Eres un extractor de datos. A partir de una conversación de WhatsApp, extrae el nombre y el interés del usuario.
+const EXTRACTION_PROMPT = `Eres un extractor de datos. A partir de una conversación de WhatsApp, extrae el nombre del usuario.
 
 Responde ÚNICAMENTE con un JSON válido, sin explicaciones:
-{"name": "nombre o null", "interest": "interés o null"}
+{"name": "nombre o null"}
 
-El interés debe ser una frase corta en español: qué tipo de clases busca, para quién, etc.
-Si no puedes inferir el dato con seguridad, usa null.`;
+Si no puedes inferir el nombre con seguridad, usa null.`;
 
 export async function captureProspectData(ctx: BotContext, history: ChatTurn[]): Promise<void> {
   if (!ctx.contactId || history.length === 0) return;
 
-  let extracted: ProspectData = { name: null, interest: null };
+  let extracted: ProspectData = { name: null };
 
   try {
     const summary = history.map((t) => `${t.role === 'user' ? 'Usuario' : 'Naty'}: ${t.content}`).join('\n');
@@ -29,7 +27,6 @@ export async function captureProspectData(ctx: BotContext, history: ChatTurn[]):
       const parsed = JSON.parse(match[0]) as Partial<ProspectData>;
       extracted = {
         name: typeof parsed.name === 'string' ? parsed.name : null,
-        interest: typeof parsed.interest === 'string' ? parsed.interest : null,
       };
     }
   } catch {
