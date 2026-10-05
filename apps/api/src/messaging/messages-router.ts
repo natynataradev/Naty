@@ -27,15 +27,22 @@ messagesRouter.post('/send', async (req: Request, res: Response) => {
       return;
     }
 
-    // Obtener conversación existente
+    // Obtener conversación existente (misma regla que ensureConversation en bot.ts)
     let conversation;
-    const { data: existingConv } = await supabase
+    const { data: existingConv, error: findError } = await supabase
       .from('conversations')
       .select('id')
       .eq('contact_id', contactId)
-      .order('created_at', { ascending: false })
+      .in('status', ['active', 'handoff'])
+      .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (findError) {
+      console.error('Error buscando conversación existente:', findError);
+      res.status(500).json({ error: 'Error buscando conversación existente' });
+      return;
+    }
 
     if (existingConv) {
       conversation = existingConv;
