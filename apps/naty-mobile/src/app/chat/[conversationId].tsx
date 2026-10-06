@@ -1,23 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { SCHOOL_ID } from '@/constants/school';
 import { useTheme } from '@/hooks/use-theme';
-import { formatMessageTime } from '@/lib/format';
+import { formatMessageTime, getInitials } from '@/lib/format';
 import { sendTextMessage } from '@/lib/messages-api';
 import { isWithinServiceWindow } from '@/lib/service-window';
 import { supabase } from '@/lib/supabase';
@@ -46,8 +49,16 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [contactId, setContactId] = useState<string | null>(null);
+  const [contactPhone, setContactPhone] = useState<string | null>(null);
+  const [keyboardPadding, setKeyboardPadding] = useState(0);
   const listRef = useRef<FlatList<Message>>(null);
+  const containerRef = useRef<View>(null);
   const hasLoadedOnce = useRef(false);
+  // En un FlatList invertido, offset 0 = pegado al mensaje más nuevo (visualmente
+  // abajo). Estos dos refs llevan la cuenta de si el usuario está ahí o leyendo
+  // mensajes viejos más arriba, para decidir si un mensaje nuevo mueve la lista.
+  const isNearBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(0);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -55,6 +66,9 @@ export default function ChatScreen() {
   const [sendingTemplateId, setSendingTemplateId] = useState<string | null>(null);
 
   const withinWindow = isWithinServiceWindow(messages);
+
+  // FlatList con inverted necesita los datos más nuevos primero (índice 0).
+  const reversedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
   const loadMessages = useCallback(async () => {
     const { data, error } = await supabase
@@ -71,13 +85,15 @@ export default function ChatScreen() {
     setMessages(data ?? []);
   }, [conversationId]);
 
-  // POST /messages/send necesita el contactId (no viaja como parámetro de navegación).
+  // POST /messages/send necesita el contactId (no viaja como parámetro de
+  // navegación). Se aprovecha la misma consulta para traer el teléfono del
+  // contacto, que tampoco viaja como parámetro y se usa en el encabezado.
   useEffect(() => {
     let cancelled = false;
 
     supabase
       .from('conversations')
-      .select('contact_id')
+      .select('contact_id, contact:contacts ( phone )')
       .eq('id', conversationId)
       .single()
       .then(({ data, error }) => {
@@ -87,6 +103,8 @@ export default function ChatScreen() {
           return;
         }
         setContactId(data.contact_id);
+        const contact = Array.isArray(data.contact) ? data.contact[0] : data.contact;
+        setContactPhone(contact?.phone ?? null);
       });
 
     return () => {
@@ -116,16 +134,13 @@ export default function ChatScreen() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          console.log('[realtime] mensaje recibido:', payload.new.id);
           const newMessage = payload.new;
           setMessages((prev) =>
             prev.some((m) => m.id === newMessage.id) ? prev : [...prev, newMessage]
           );
         }
       )
-      .subscribe((status, err) => {
-        console.log('[realtime] estado:', status, err ?? '');
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -143,11 +158,58 @@ export default function ChatScreen() {
     return () => clearInterval(interval);
   }, [loading, withinWindow, loadMessages]);
 
+  // Con la lista invertida, abrir la conversación ya deja el mensaje más nuevo
+  // visible solo (offset 0 es el reposo natural) — no hace falta scroll aquí.
+  // Solo bajamos manualmente cuando llegan mensajes nuevos Y el usuario ya
+  // estaba viendo el final; si está leyendo mensajes viejos, no lo movemos.
   useEffect(() => {
-    if (messages.length > 0) {
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: false }));
+    const isInitialLoad = prevMessageCountRef.current === 0 && messages.length > 0;
+    const grew = messages.length > prevMessageCountRef.current;
+    prevMessageCountRef.current = messages.length;
+
+    if (!grew || isInitialLoad) return;
+    if (isNearBottomRef.current) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
     }
   }, [messages.length]);
+
+  function handleListScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    isNearBottomRef.current = event.nativeEvent.contentOffset.y <= 150;
+  }
+
+  // Cuando aparece el teclado, el último mensaje debe seguir visible.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const subscription = Keyboard.addListener(showEvent, () => {
+      requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }));
+    });
+    return () => subscription.remove();
+  }, []);
+
+  // Espacio extra debajo de la barra de envío mientras el teclado está abierto.
+  // Se mide a mano (en vez de KeyboardAvoidingView) porque este contenedor no
+  // tiene encabezado y el sistema a veces ya redimensiona la pantalla solo —
+  // si ya lo hizo, la medición da 0 y no se duplica el espacio.
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      requestAnimationFrame(() => {
+        containerRef.current?.measureInWindow((x, y, width, height) => {
+          const screenY = e.endCoordinates.screenY;
+          const padding = Math.max(0, y + height - screenY);
+          setKeyboardPadding(padding);
+        });
+      });
+    });
+
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardPadding(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Ya no se usan plantillas (fuera de la ventana de 24h ahora solo se deshabilita el
   // envío). Se conserva esta consulta por si se vuelve a necesitar, pero no se ejecuta.
@@ -231,16 +293,47 @@ export default function ChatScreen() {
     setMessages((prev) => [...prev, data]);
   }
 
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }
+
+  // Si el contacto no tiene nombre, el título ya es su teléfono (ver
+  // (tabs)/index.tsx) — en ese caso no lo repetimos como subtítulo.
+  const showPhoneSubtitle = !!contactPhone && contactPhone !== displayName;
+
   return (
-    <ThemedView style={styles.container}>
+    <View
+      ref={containerRef}
+      collapsable={false}
+      style={[styles.container, { backgroundColor: theme.background, paddingBottom: keyboardPadding }]}
+    >
       <Stack.Screen options={{ title: displayName, headerBackTitle: 'Chats' }} />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-      >
-        <SafeAreaView style={styles.flex} edges={['bottom']}>
+      <View style={styles.flex}>
+        <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+          <ThemedView type="backgroundElement" style={styles.header}>
+            <Pressable onPress={handleBack} hitSlop={8} style={styles.backButton}>
+              <ThemedText style={styles.backButtonText}>‹</ThemedText>
+            </Pressable>
+            <ThemedView type="backgroundSelected" style={styles.headerAvatar}>
+              <ThemedText type="smallBold">{getInitials(displayName)}</ThemedText>
+            </ThemedView>
+            <View style={styles.headerInfo}>
+              <ThemedText type="smallBold" numberOfLines={1}>
+                {displayName}
+              </ThemedText>
+              {showPhoneSubtitle && (
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                  {contactPhone}
+                </ThemedText>
+              )}
+            </View>
+          </ThemedView>
+
           {loading ? (
             <ThemedView style={styles.center}>
               <ThemedText themeColor="textSecondary">Cargando mensajes…</ThemedText>
@@ -248,10 +341,12 @@ export default function ChatScreen() {
           ) : (
             <FlatList
               ref={listRef}
-              data={messages}
+              inverted
+              data={reversedMessages}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.list}
-              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+              onScroll={handleListScroll}
+              scrollEventThrottle={100}
               ListEmptyComponent={
                 <ThemedView style={styles.center}>
                   <ThemedText themeColor="textSecondary">Sin mensajes todavía.</ThemedText>
@@ -293,7 +388,7 @@ export default function ChatScreen() {
             />
           )}
 
-          <ThemedView type="backgroundElement" style={styles.inputBarWrapper}>
+          <ThemedView style={styles.inputBarWrapper}>
             {!withinWindow ? (
               <ThemedText type="small" style={styles.windowClosedNotice}>
                 Pasaron más de 24 horas desde el último mensaje de este contacto. WhatsApp no permite
@@ -330,8 +425,8 @@ export default function ChatScreen() {
             </ThemedView>
           </ThemedView>
         </SafeAreaView>
-      </KeyboardAvoidingView>
-    </ThemedView>
+      </View>
+    </View>
   );
 }
 
@@ -341,6 +436,36 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 64,
+    paddingHorizontal: 12,
+    gap: Spacing.two,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.backgroundSelected,
+  },
+  backButton: {
+    height: 44,
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 32,
+    lineHeight: 34,
+  },
+  headerAvatar: {
+    height: 44,
+    width: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerInfo: {
+    flex: 1,
+    gap: 2,
   },
   center: {
     flex: 1,
@@ -409,8 +534,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.dark.backgroundSelected,
+    padding: Spacing.one,
+    marginHorizontal: 12,
+    marginBottom: Spacing.two,
   },
   input: {
     flex: 1,
@@ -418,13 +547,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 0,
   },
   inputDisabled: {
     opacity: 0.4,
   },
   sendButton: {
     backgroundColor: '#22c55e',
-    borderRadius: Spacing.two,
+    borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
   },

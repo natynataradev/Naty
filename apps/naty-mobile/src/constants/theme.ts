@@ -7,20 +7,30 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// Paleta del Dashboard (apps/dashboard/tailwind.config.ts + src/app/globals.css).
+// Colors.light y Colors.dark son idénticos a propósito: la app se ve igual sin
+// importar el modo claro/oscuro del teléfono, igual que el Dashboard (que es
+// siempre oscuro). backgroundElement/backgroundSelected/textSecondary se
+// calcularon a partir de cómo el Dashboard pinta tarjetas y texto secundario
+// (bg-white/5, border-white/10, text-gray-400) mezclados sobre #1A1A2E.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#FFFFFF',
+    background: '#1A1A2E',
+    backgroundElement: '#252538',
+    backgroundSelected: '#313143',
+    textSecondary: '#9CA3AF',
+    accent: '#6BBF4E',
+    accentBlue: '#3AABCE',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#FFFFFF',
+    background: '#1A1A2E',
+    backgroundElement: '#252538',
+    backgroundSelected: '#313143',
+    textSecondary: '#9CA3AF',
+    accent: '#6BBF4E',
+    accentBlue: '#3AABCE',
   },
 } as const;
 

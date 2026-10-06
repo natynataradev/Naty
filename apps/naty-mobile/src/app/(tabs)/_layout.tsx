@@ -31,9 +31,8 @@ export default function TabsLayout() {
   }
 
   return (
-    <Tabs>
+    <Tabs screenOptions={{ tabBarStyle: { display: 'none' } }}>
       <Tabs.Screen name="index" options={{ title: 'Chats' }} />
-      <Tabs.Screen name="contacts" options={{ title: 'Contactos' }} />
     </Tabs>
   );
 }

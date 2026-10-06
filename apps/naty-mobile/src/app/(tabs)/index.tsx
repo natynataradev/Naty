@@ -8,7 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { SCHOOL_ID } from '@/constants/school';
 import { useTheme } from '@/hooks/use-theme';
-import { formatMessageTime } from '@/lib/format';
+import { formatMessageTime, getInitials } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { ConversationListItem } from '@/types/chat';
 
@@ -131,7 +131,7 @@ export default function ChatsScreen() {
                 style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               >
                 <ThemedView type="backgroundElement" style={styles.avatar}>
-                  <ThemedText type="smallBold">{name.slice(0, 2).toUpperCase()}</ThemedText>
+                  <ThemedText type="smallBold">{getInitials(name)}</ThemedText>
                 </ThemedView>
 
                 <ThemedView style={styles.rowBody}>
