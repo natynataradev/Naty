@@ -1,6 +1,7 @@
 export type BotFlowResult =
   | { action: 'responded'; message: string }
   | { action: 'handoff'; reason: string }
+  | { action: 'silent' }
   | { action: 'noop' };
 
 export interface BotContext {

@@ -41,5 +41,7 @@ async function handleIncomingMessage(message: any): Promise<void> {
     await messagingService.send(message.from, result.message);
   } else if (result.action === 'handoff') {
     console.log(`[bot-meta] handoff activado: ${result.reason}`);
+  } else if (result.action === 'silent') {
+    console.log('[bot-meta] conversación en handoff — bot no responde');
   }
 }

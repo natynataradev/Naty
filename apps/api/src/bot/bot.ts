@@ -22,6 +22,10 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
     });
   }
 
+  if (ctx.conversationStatus === 'handoff') {
+    return { action: 'silent' };
+  }
+
   // Captura de nombre al inicio de la conversación
   if (!ctx.contactName) {
     const inboundCount = await countInboundMessages(ctx.conversationId);

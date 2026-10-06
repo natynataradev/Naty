@@ -36,6 +36,8 @@ export const env = {
   PRIVACY_POLICY_URL: optionalEnv('PRIVACY_POLICY_URL', ''),
 
   DEFAULT_SCHOOL_ID: optionalEnv('DEFAULT_SCHOOL_ID', ''),
+
+  HANDOFF_WINDOW_MINUTES: parseInt(optionalEnv('HANDOFF_WINDOW_MINUTES', '720'), 10),
 } as const;
 
 if (!env.GEMINI_API_KEY && !env.ANTHROPIC_API_KEY) {
