@@ -67,13 +67,17 @@ messagesRouter.post('/send', async (req: Request, res: Response) => {
     }
 
     // Registrar mensaje en la BD
-    const { error: insertError } = await supabase.from('messages').insert({
-      conversation_id: conversation.id,
-      direction: 'outbound',
-      content: body,
-      type: 'text',
-      status: 'sent',
-    });
+    const { data: newMessage, error: insertError } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversation.id,
+        direction: 'outbound',
+        content: body,
+        type: 'text',
+        status: 'sent',
+      })
+      .select('id')
+      .single();
 
     if (insertError) {
       console.error('Error insertando mensaje:', insertError);
@@ -86,6 +90,16 @@ messagesRouter.post('/send', async (req: Request, res: Response) => {
       await messagingService.send(contact.phone, body);
     } catch (sendError) {
       console.error('Error enviando por WhatsApp:', sendError);
+
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({ status: 'failed' })
+        .eq('id', newMessage.id);
+
+      if (updateError) {
+        console.error('Error marcando mensaje como failed:', updateError);
+      }
+
       // El mensaje se registró en la BD, pero no se pudo enviar por WhatsApp
       res.status(400).json({ error: 'Mensaje guardado pero no se pudo enviar por WhatsApp' });
       return;

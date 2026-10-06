@@ -23,6 +23,11 @@ import { isWithinServiceWindow } from '@/lib/service-window';
 import { supabase } from '@/lib/supabase';
 import type { Message, Template } from '@/types/chat';
 
+// Ya no se usan plantillas en esta pantalla — fuera de la ventana de 24h el
+// envío simplemente se deshabilita. Se dejan estas funciones sin usar por si
+// se necesitan más adelante.
+const TEMPLATES_ENABLED = false;
+
 function interpolateTemplate(body: string, contactName: string): string {
   return body.replace(/\{\{nombre\}\}/gi, contactName);
 }
@@ -144,9 +149,10 @@ export default function ChatScreen() {
     }
   }, [messages.length]);
 
-  // Solo se cargan plantillas cuando de verdad se necesitan (fuera de la ventana de 24h).
+  // Ya no se usan plantillas (fuera de la ventana de 24h ahora solo se deshabilita el
+  // envío). Se conserva esta consulta por si se vuelve a necesitar, pero no se ejecuta.
   useEffect(() => {
-    if (loading || withinWindow || templatesFetched) return;
+    if (!TEMPLATES_ENABLED || loading || withinWindow || templatesFetched) return;
 
     let cancelled = false;
     setLoadingTemplates(true);
@@ -287,73 +293,42 @@ export default function ChatScreen() {
             />
           )}
 
-          {!loading && !withinWindow ? (
-            <ThemedView type="backgroundElement" style={styles.templatePicker}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.templatePickerHint}>
-                Han pasado más de 24h desde el último mensaje del contacto (o nunca ha escrito). WhatsApp
-                exige usar una plantilla pre-aprobada para el siguiente envío.
+          <ThemedView type="backgroundElement" style={styles.inputBarWrapper}>
+            {!withinWindow ? (
+              <ThemedText type="small" style={styles.windowClosedNotice}>
+                Pasaron más de 24 horas desde el último mensaje de este contacto. WhatsApp no permite
+                escribirle desde aquí. Escríbele desde la app de WhatsApp.
               </ThemedText>
-
-              {loadingTemplates ? (
-                <ActivityIndicator color={theme.textSecondary} style={styles.templateLoading} />
-              ) : templates.length === 0 ? (
-                <ThemedText type="small" themeColor="textSecondary">
-                  No hay plantillas creadas todavía. Créalas desde el panel web (/templates).
-                </ThemedText>
-              ) : (
-                <ScrollView contentContainerStyle={styles.templateList} showsVerticalScrollIndicator={false}>
-                  {templates.map((template) => (
-                    <Pressable
-                      key={template.id}
-                      onPress={() => handleSendTemplate(template)}
-                      disabled={!!sendingTemplateId}
-                      style={({ pressed }) => [
-                        styles.templateCard,
-                        { borderColor: theme.backgroundSelected },
-                        pressed && styles.templateCardPressed,
-                      ]}
-                    >
-                      <ThemedText type="smallBold">{template.name}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
-                        {interpolateTemplate(template.body, displayName)}
-                      </ThemedText>
-                      {sendingTemplateId === template.id && (
-                        <ActivityIndicator color={theme.textSecondary} style={styles.templateLoading} />
-                      )}
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              )}
+            ) : sendError ? (
+              <ThemedText type="small" style={styles.sendError}>
+                {sendError}
+              </ThemedText>
+            ) : null}
+            <ThemedView type="backgroundElement" style={styles.inputBar}>
+              <TextInput
+                value={draft}
+                onChangeText={(text) => {
+                  setDraft(text);
+                  if (sendError) setSendError('');
+                }}
+                editable={withinWindow}
+                placeholder="Escribe un mensaje…"
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.input, { color: theme.text }, !withinWindow && styles.inputDisabled]}
+                multiline
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={!withinWindow || !draft.trim() || sending}
+                style={[
+                  styles.sendButton,
+                  (!withinWindow || !draft.trim() || sending) && styles.sendButtonDisabled,
+                ]}
+              >
+                <ThemedText style={styles.sendButtonText}>Enviar</ThemedText>
+              </Pressable>
             </ThemedView>
-          ) : (
-            <ThemedView type="backgroundElement" style={styles.inputBarWrapper}>
-              {sendError ? (
-                <ThemedText type="small" style={styles.sendError}>
-                  {sendError}
-                </ThemedText>
-              ) : null}
-              <ThemedView type="backgroundElement" style={styles.inputBar}>
-                <TextInput
-                  value={draft}
-                  onChangeText={(text) => {
-                    setDraft(text);
-                    if (sendError) setSendError('');
-                  }}
-                  placeholder="Escribe un mensaje…"
-                  placeholderTextColor={theme.textSecondary}
-                  style={[styles.input, { color: theme.text }]}
-                  multiline
-                />
-                <Pressable
-                  onPress={handleSend}
-                  disabled={!draft.trim() || sending}
-                  style={[styles.sendButton, (!draft.trim() || sending) && styles.sendButtonDisabled]}
-                >
-                  <ThemedText style={styles.sendButtonText}>Enviar</ThemedText>
-                </Pressable>
-              </ThemedView>
-            </ThemedView>
-          )}
+          </ThemedView>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -426,6 +401,10 @@ const styles = StyleSheet.create({
     color: '#f87171',
     paddingHorizontal: Spacing.three,
   },
+  windowClosedNotice: {
+    paddingHorizontal: Spacing.three,
+    lineHeight: 16,
+  },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -439,6 +418,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  inputDisabled: {
+    opacity: 0.4,
   },
   sendButton: {
     backgroundColor: '#22c55e',
