@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, Megaphone, History, Settings, LogOut, Menu, X, FileText, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Users, Megaphone, History, Settings, LogOut, Menu, X, FileText, CalendarDays, CreditCard } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { UserRole } from '@naty/shared';
 
@@ -15,6 +15,7 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/contacts', label: 'Contactos', icon: Users },
+  { href: '/payments-pending', label: 'Pagos pendientes', icon: CreditCard },
   { href: '/campaigns', label: 'Mensajes segmentados', icon: Megaphone, paid: true },
   { href: '/templates', label: 'Plantillas', icon: FileText, paid: true },
   { href: '/calendar', label: 'Calendario', icon: CalendarDays },
