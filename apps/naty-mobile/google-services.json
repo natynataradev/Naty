@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670085933855",
+    "project_id": "naty-mobile",
+    "storage_bucket": "naty-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670085933855:android:bafc397ca56221d57a5e2a",
+        "android_client_info": {
+          "package_name": "com.natara.natymobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1FoBCDA08gTZdfahBl7HYwMoZwy9OvqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
