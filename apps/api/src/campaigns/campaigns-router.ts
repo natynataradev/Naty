@@ -11,6 +11,7 @@ import {
 import { sendCampaign } from './mass-messaging.js';
 import type { CreateCampaignInput } from '@naty/shared';
 import { supabase } from '../db/client.js';
+import { env } from '../config/env.js';
 
 export const campaignsRouter: RouterType = Router();
 
@@ -94,6 +95,11 @@ campaignsRouter.post('/', async (req: Request, res: Response) => {
 });
 
 campaignsRouter.post('/:id/send', async (req: Request, res: Response) => {
+  if (!env.CAMPAIGNS_ENABLED) {
+    res.status(403).json({ error: 'Función con costo desactivada' });
+    return;
+  }
+
   const id = req.params['id'] as string;
   try {
     const campaign = await getCampaignById(id);
@@ -112,6 +118,11 @@ campaignsRouter.post('/:id/send', async (req: Request, res: Response) => {
 
 // POST /:id/schedule — programa o reprograma una campaña
 campaignsRouter.post('/:id/schedule', async (req: Request, res: Response) => {
+  if (!env.CAMPAIGNS_ENABLED) {
+    res.status(403).json({ error: 'Función con costo desactivada' });
+    return;
+  }
+
   try {
     const body = req.body as { scheduled_at?: string };
     if (!body.scheduled_at) {

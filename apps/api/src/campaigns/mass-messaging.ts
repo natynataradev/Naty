@@ -12,6 +12,11 @@ const SCHOOL_ID = env.DEFAULT_SCHOOL_ID;
 const BATCH_DELAY_MS = 200;
 
 export async function sendCampaign(campaignId: string): Promise<void> {
+  if (!env.CAMPAIGNS_ENABLED) {
+    console.log('[campaigns] desactivadas, no se envía');
+    return;
+  }
+
   const campaign = await getCampaignById(campaignId);
   if (!campaign) throw new Error('Campaña no encontrada');
   if (campaign.status !== 'draft' && campaign.status !== 'scheduled') {

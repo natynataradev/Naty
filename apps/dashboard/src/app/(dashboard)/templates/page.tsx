@@ -2,6 +2,8 @@ import { api } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { createClient } from '@/lib/supabase/server';
 import { TemplatesClient } from './_components/templates-client';
+import { DisabledFeatureCard } from '@/components/disabled-feature-card';
+import { PAID_FEATURES_ENABLED } from '@/lib/features';
 
 export const revalidate = 0;
 
@@ -13,6 +15,10 @@ interface Template {
 }
 
 export default async function TemplatesPage() {
+  if (!PAID_FEATURES_ENABLED) {
+    return <DisabledFeatureCard />;
+  }
+
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   const userId = session?.user?.id ?? '';

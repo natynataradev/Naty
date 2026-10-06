@@ -3,6 +3,8 @@ import { Plus, Megaphone, CheckCircle2, Clock, XOctagon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/badge';
 import { PageHeader } from '@/components/page-header';
+import { DisabledFeatureCard } from '@/components/disabled-feature-card';
+import { PAID_FEATURES_ENABLED } from '@/lib/features';
 import type { Campaign } from '@naty/shared';
 import { safeLocaleDateString } from '@/lib/date-utils';
 
@@ -123,6 +125,10 @@ async function CampaignsList() {
 }
 
 export default async function CampaignsPage() {
+  if (!PAID_FEATURES_ENABLED) {
+    return <DisabledFeatureCard />;
+  }
+
   let campaigns: Campaign[] = [];
   try {
     campaigns = await api.get<Campaign[]>('/campaigns');

@@ -6,6 +6,8 @@ import { Badge } from '@/components/badge';
 import type { Campaign } from '@naty/shared';
 import { safeLocaleDateString, safeLocaleString } from '@/lib/date-utils';
 import { CampaignActions } from './_components/campaign-actions';
+import { DisabledFeatureCard } from '@/components/disabled-feature-card';
+import { PAID_FEATURES_ENABLED } from '@/lib/features';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -51,6 +53,10 @@ function MetricCard({ label, value, sub }: { label: string; value: number; sub?:
 export const revalidate = 0;
 
 export default async function CampaignDetailPage({ params }: PageProps) {
+  if (!PAID_FEATURES_ENABLED) {
+    return <DisabledFeatureCard />;
+  }
+
   const { id } = await params;
 
   let campaign: Campaign;

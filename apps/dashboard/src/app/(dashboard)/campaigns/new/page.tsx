@@ -2,8 +2,14 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { NewCampaignForm } from './_components/new-campaign-form';
 import { createClient } from '@/lib/supabase/server';
+import { DisabledFeatureCard } from '@/components/disabled-feature-card';
+import { PAID_FEATURES_ENABLED } from '@/lib/features';
 
 export default async function NewCampaignPage() {
+  if (!PAID_FEATURES_ENABLED) {
+    return <DisabledFeatureCard />;
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id ?? 'client-user';

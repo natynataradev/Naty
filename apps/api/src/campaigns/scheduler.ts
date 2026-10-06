@@ -1,5 +1,6 @@
 import { sendCampaign } from './mass-messaging.js';
 import { getPendingScheduledCampaigns, updateCampaignStatus } from './campaign-repository.js';
+import { env } from '../config/env.js';
 
 const POLL_INTERVAL_MS = 60_000; // cada 60 segundos
 
@@ -15,6 +16,8 @@ export function startScheduler(): void {
 }
 
 async function checkAndDispatch(): Promise<void> {
+  if (!env.CAMPAIGNS_ENABLED) return;
+
   try {
     const due = await getPendingScheduledCampaigns();
     if (due.length === 0) return;

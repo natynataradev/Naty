@@ -15,8 +15,8 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/contacts', label: 'Contactos', icon: Users },
-  { href: '/campaigns', label: 'Mensajes segmentados', icon: Megaphone },
-  { href: '/templates', label: 'Plantillas', icon: FileText },
+  { href: '/campaigns', label: 'Mensajes segmentados', icon: Megaphone, paid: true },
+  { href: '/templates', label: 'Plantillas', icon: FileText, paid: true },
   { href: '/calendar', label: 'Calendario', icon: CalendarDays },
   { href: '/history', label: 'Historial', icon: History },
 ];
@@ -86,7 +86,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
             <div>
               <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">Principal</p>
               <ul className="space-y-1">
-                {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
+                {NAV_ITEMS.map(({ href, label, icon: Icon, exact, paid }) => {
                   const isActive = exact ? pathname === href : pathname.startsWith(href);
                   return (
                     <li key={href}>
@@ -108,6 +108,11 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
                           <Icon size={16} />
                         </div>
                         {label}
+                        {paid && (
+                          <span className="ml-auto shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-500">
+                            Con costo
+                          </span>
+                        )}
                       </Link>
                     </li>
                   );

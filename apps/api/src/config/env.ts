@@ -38,6 +38,8 @@ export const env = {
   DEFAULT_SCHOOL_ID: optionalEnv('DEFAULT_SCHOOL_ID', ''),
 
   HANDOFF_WINDOW_MINUTES: parseInt(optionalEnv('HANDOFF_WINDOW_MINUTES', '720'), 10),
+
+  CAMPAIGNS_ENABLED: optionalEnv('CAMPAIGNS_ENABLED', 'false') === 'true',
 } as const;
 
 if (!env.GEMINI_API_KEY && !env.ANTHROPIC_API_KEY) {
