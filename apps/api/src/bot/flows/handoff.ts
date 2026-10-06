@@ -1,4 +1,6 @@
 import { supabase } from '../../db/client.js';
+import { env } from '../../config/env.js';
+import { sendPushToSchool } from '../../notifications/push.js';
 import { captureProspectData } from './prospect-capture.js';
 import type { BotContext } from '../types.js';
 import type { ChatTurn } from '../llm.js';
@@ -31,6 +33,17 @@ export async function finalizeHandoff(
         handoff_reason: reason,
       })
       .eq('id', ctx.conversationId);
+
+    const contactLabel = ctx.contactName ?? ctx.phone;
+    let pushBody = `${contactLabel}: necesita atención de una persona`;
+    if (reason) {
+      pushBody += ` (${reason})`;
+    }
+    void sendPushToSchool(env.DEFAULT_SCHOOL_ID, {
+      title: 'Naty pasó una conversación',
+      body: pushBody.slice(0, 160),
+      data: { conversationId: ctx.conversationId, type: 'handoff' },
+    });
 
     const history = await loadHistory(ctx.conversationId);
     await captureProspectData(ctx, history);
