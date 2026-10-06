@@ -1,5 +1,6 @@
 import { supabase } from '../db/client.js';
 import { env } from '../config/env.js';
+import { sendPushToSchool } from '../notifications/push.js';
 import { handleGeneralAttention } from './flows/general-attention.js';
 import type { BotContext, BotFlowResult } from './types.js';
 
@@ -12,6 +13,14 @@ export async function processMessage(phone: string, body: string): Promise<BotFl
   let ctx = await buildContext(phone, body);
 
   await persistInboundMessage(ctx, body);
+
+  if (ctx.conversationId) {
+    void sendPushToSchool(DEFAULT_SCHOOL_ID, {
+      title: ctx.contactName ?? ctx.phone,
+      body: body.slice(0, 120),
+      data: { conversationId: ctx.conversationId },
+    });
+  }
 
   // Captura de nombre al inicio de la conversación
   if (!ctx.contactName) {

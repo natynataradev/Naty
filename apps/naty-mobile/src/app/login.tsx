@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { registerForPush } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginScreen() {
@@ -40,6 +41,7 @@ export default function LoginScreen() {
       return;
     }
 
+    void registerForPush();
     router.replace('/');
   }
 

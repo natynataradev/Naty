@@ -4,6 +4,7 @@ import { Tabs, router } from 'expo-router';
 
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
+import { registerForPush } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
 
 export default function TabsLayout() {
@@ -16,6 +17,7 @@ export default function TabsLayout() {
         router.replace('/login');
         return;
       }
+      void registerForPush();
       setChecking(false);
     });
   }, []);
